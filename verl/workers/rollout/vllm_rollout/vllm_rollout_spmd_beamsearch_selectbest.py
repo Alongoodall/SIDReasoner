@@ -75,11 +75,10 @@ def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> list[in
     return token_ids
 
 
-
 def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
     """
-    Truncate a token sequence at the first occurrence of `marker` within the 
-    last `clip_chars` tokens. If the marker is found, keep tokens up to and 
+    Truncate a token sequence at the first occurrence of `marker` within the
+    last `clip_chars` tokens. If the marker is found, keep tokens up to and
     including the marker. If not found, return the original sequence.
 
     Args:
@@ -88,7 +87,7 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
         clip_chars (int): Number of tokens from the end to search for the marker.
 
     Returns:
-        List[int]: The truncated token sequence, or the original sequence 
+        List[int]: The truncated token sequence, or the original sequence
                    if the marker is not found.
     """
     m = len(marker)
@@ -96,7 +95,7 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
     search_start = max(0, len(tokens) - clip_chars - m + 1)
 
     for i in range(search_start, len(tokens) - m + 1):
-        if tokens[i:i + m] == marker:
+        if tokens[i : i + m] == marker:
             return tokens[: i + m]  # Keep marker included
 
     # Marker not found → return original (format reward will be 0)
@@ -104,6 +103,8 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
 
 
 _SOLUTION_CLIP_CHARS = 100
+
+
 def extract_content_after_think(output: str) -> str | None:
     if len(output) > _SOLUTION_CLIP_CHARS:
         output = output[-_SOLUTION_CLIP_CHARS:]
@@ -123,7 +124,7 @@ def vllm_beam_search_concat(
     params,
     beam_width: int = 10,
     depth: int = 3,
-    sep: str = "<|beam_sep|>\n"  # or any special marker
+    sep: str = "<|beam_sep|>\n",  # or any special marker
 ):
     # 1. First perform beam search to get all beams
     max_response_length = params.max_tokens
@@ -133,7 +134,7 @@ def vllm_beam_search_concat(
         max_tokens=depth,
         temperature=params.temperature,
         length_penalty=0.0,
-        # logprobs=None, 
+        # logprobs=None,
     )
     prompts = [{"prompt": _} for _ in prompts]
     all_beams = llm.beam_search(
@@ -151,8 +152,8 @@ def vllm_beam_search_concat(
         # sort beams by score descending (assume already sorted)
         # then build one single string: prompt + sep + beam1 + sep + beam2 + ... etc
         # If you want to include the original prompt + reasoning prefix, make sure to preserve it
-        prompt = prompts[pi]['prompt']
-        reference = reference_answers[pi]['answer']
+        prompt = prompts[pi]["prompt"]
+        reference = reference_answers[pi]["answer"]
         # optionally: remove prompt from each beam result (if beam results only contain continuation)
         pieces = []
         for seq in beam_list.sequences:
@@ -162,7 +163,7 @@ def vllm_beam_search_concat(
             else:
                 continuation = continuation.strip()
             pieces.append(continuation)
-        
+
         # If reference answer is hit, then use it directly.
         if reference in pieces:
             concatenated_text = prompt + reference
@@ -171,17 +172,13 @@ def vllm_beam_search_concat(
             concatenated_text = prompt + pieces[0]
 
         concatenated.append(concatenated_text)
-    
+
     # --- Convert concatenated strings to token id sequences ---
-    concatenated_ids = [
-        tokenizer.encode(text, add_special_tokens=False)
-        for text in concatenated
-    ]
+    concatenated_ids = [tokenizer.encode(text, add_special_tokens=False) for text in concatenated]
     # truncate the concatenated ids to fit in response length - params.max_tokens
     concatenated_ids = [ids[:max_response_length] for ids in concatenated_ids]
 
     return concatenated_ids
-
 
 
 class vLLMRollout(BaseRollout):
@@ -323,10 +320,9 @@ class vLLMRollout(BaseRollout):
         assert "sid_beam_size" in config, "Please specify sid_beam_size in config for vllm beam search."
         assert "sid_length" in config, "Please specify sid_length in config for vllm beam search."
         # assert "learn_gen_sid" in config, "Please specify learn_gen_sid in config for vllm beam search."
-        self.sid_beam_size = config['sid_beam_size']
-        self.num_sid_tokens = config['sid_length']
+        self.sid_beam_size = config["sid_beam_size"]
+        self.num_sid_tokens = config["sid_length"]
         # self.learn_gen_sid = config['learn_gen_sid']
-
 
     @contextmanager
     def update_sampling_params(self, **kwargs):
@@ -376,7 +372,7 @@ class vLLMRollout(BaseRollout):
         eos_token_id = prompts.meta_info["eos_token_id"]
 
         batch_size = idx.size(0)
-        
+
         non_tensor_batch = prompts.non_tensor_batch
         if "raw_prompt_ids" not in non_tensor_batch:
             non_tensor_batch["raw_prompt_ids"] = np.array(
@@ -448,14 +444,16 @@ class vLLMRollout(BaseRollout):
 
             # TODO(sgm): disable logprob when recompute_log_prob is enable
             # if n = 1: (bs, response_length) ; if n > 1: (bs * n, response_length)
-    
+
             response_raw = []
             rollout_log_probs = []
             for output in outputs:
                 for sample_id in range(len(output.outputs)):
                     response_ids = output.outputs[sample_id].token_ids
                     # the generated responses are truncated at </think>\n\n
-                    response_ids_truncated = truncate_at_end_think(response_ids, marker=self.truncate_marker, clip_chars=20)
+                    response_ids_truncated = truncate_at_end_think(
+                        response_ids, marker=self.truncate_marker, clip_chars=20
+                    )
                     response_raw.append(response_ids_truncated)
                     if self.config.calculate_log_probs:
                         curr_log_prob = []
@@ -469,7 +467,7 @@ class vLLMRollout(BaseRollout):
                 self.inference_engine,
                 self.tokenizer,
                 prompts=[self.tokenizer.decode(r) for r in response_raw],
-                reference_answers=prompts.non_tensor_batch['extra_info'],
+                reference_answers=prompts.non_tensor_batch["extra_info"],
                 params=self.sampling_params.__copy__(),
                 beam_width=self.sid_beam_size,
                 depth=self.num_sid_tokens,

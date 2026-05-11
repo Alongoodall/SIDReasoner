@@ -3,7 +3,7 @@ import os
 
 import sys
 from typing import List
-import numpy as np 
+import numpy as np
 import fire
 import torch
 import transformers
@@ -16,13 +16,14 @@ import torch.nn as nn
 import math
 import warnings
 from functools import partial
-import numpy as np 
+import numpy as np
 import fire
 import transformers
 from torch.optim.lr_scheduler import LambdaLR
 import json
 import wandb
 from contextlib import contextmanager
+
 """
 Unused imports:`
 import torch.nn as nn
@@ -93,24 +94,24 @@ class TokenExtender:
         self.index_file = index_file
         self.indices = None
         self.new_tokens = None
-        
+
     def _load_data(self):
-        with open(os.path.join(self.data_path, self.dataset + self.index_file), 'r') as f:
+        with open(os.path.join(self.data_path, self.dataset + self.index_file), "r") as f:
             self.indices = json.load(f)
-    
+
     def get_new_tokens(self):
         if self.new_tokens is not None:
             return self.new_tokens
-            
+
         if self.indices is None:
             self._load_data()
-        
+
         self.new_tokens = set()
         for index in self.indices.values():
             for token in index:
                 self.new_tokens.add(token)
         self.new_tokens = sorted(list(self.new_tokens))
-        
+
         return self.new_tokens
 
 
@@ -132,6 +133,7 @@ def _decode_tokens(tokens, tokenizer_ref):
     if not valid_ids:
         return ""
     return tokenizer_ref.decode(valid_ids, skip_special_tokens=False)
+
 
 def _preview_dataset(dataset, name, tokenizer_ref, max_samples=3):
     print(f"[Preview] {name}: displaying up to {max_samples} samples")
@@ -156,14 +158,12 @@ def _preview_dataset(dataset, name, tokenizer_ref, max_samples=3):
         print()
 
 
-
-def _get_cosine_schedule_with_warmup_lr_lambda(
-    current_step, *, num_warmup_steps, num_training_steps, num_cycles
-):
+def _get_cosine_schedule_with_warmup_lr_lambda(current_step, *, num_warmup_steps, num_training_steps, num_cycles):
     if current_step < num_warmup_steps:
         return max(0.1, float(current_step) / float(max(1, num_warmup_steps)))
     progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
     return max(0.1, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
+
 
 def get_cosine_schedule_with_warmup(
     optimizer, num_warmup_steps, num_training_steps, num_cycles: float = 0.5, last_epoch: int = -1
@@ -187,7 +187,6 @@ def train(
     sample: int = -1,
     seed: int = 42,
     category: str = "Office_Products",
-    
     # training hyperparams
     batch_size: int = 1024,
     micro_batch_size: int = 8,
@@ -207,18 +206,23 @@ def train(
     train_new_token_embeddings_only: bool = False,
 ):
     set_seed(seed)
-    os.environ['WANDB_PROJECT'] = wandb_project
-    category_dict = {"Industrial_and_Scientific": "industrial and scientific items", "Office_Products": "office products", "Toys_and_Games": "toys and games", "Sports": "sports and outdoors", "Books": "books", "Video_Games": "video games"}
+    os.environ["WANDB_PROJECT"] = wandb_project
+    category_dict = {
+        "Industrial_and_Scientific": "industrial and scientific items",
+        "Office_Products": "office products",
+        "Toys_and_Games": "toys and games",
+        "Sports": "sports and outdoors",
+        "Books": "books",
+        "Video_Games": "video games",
+    }
     if category not in category_dict:
         category = "items"
-    else:   
+    else:
         category = category_dict[category]
-        
-    assert (
-        base_model
-    ), "Please specify a --base_model, e.g. --base_model='decapoda-research/llama-7b-hf'"
+
+    assert base_model, "Please specify a --base_model, e.g. --base_model='decapoda-research/llama-7b-hf'"
     gradient_accumulation_steps = batch_size // micro_batch_size
-    
+
     device_map = "auto"
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
@@ -235,19 +239,18 @@ def train(
         config = AutoConfig.from_pretrained(base_model)
         model = AutoModelForCausalLM.from_config(config)
         print("Training from scratch!")
-        
+
     tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "left"
 
     print(f"Tokenizer length: {len(tokenizer)}")
-    
+
     if sid_index_path and os.path.exists(sid_index_path):
         print(f"Loading index from {sid_index_path}")
         token_extender = TokenExtender(
-            data_path=os.path.dirname(sid_index_path),
-            dataset=os.path.basename(sid_index_path).split('.')[0]
+            data_path=os.path.dirname(sid_index_path), dataset=os.path.basename(sid_index_path).split(".")[0]
         )
         new_tokens = token_extender.get_new_tokens()
         if new_tokens:
@@ -289,9 +292,17 @@ def train(
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     percent = (trainable_params / total_params) * 100 if total_params > 0 else 0.0
     print(f"Trainable parameters: {trainable_params} / {total_params} ({percent:.4f}%)")
-        
 
-    train_data = ReasoningActivationDataset(reasoning_train_file=reasoning_train_file, item_file=item_meta_path, index_file=sid_index_path, tokenizer=tokenizer, max_len=cutoff_len,  sample=sample, seed=seed, category=category)
+    train_data = ReasoningActivationDataset(
+        reasoning_train_file=reasoning_train_file,
+        item_file=item_meta_path,
+        index_file=sid_index_path,
+        tokenizer=tokenizer,
+        max_len=cutoff_len,
+        sample=sample,
+        seed=seed,
+        category=category,
+    )
     main_rank = int(os.environ.get("RANK", 0)) == 0 and int(os.environ.get("LOCAL_RANK", 0)) == 0
     if main_rank:
         train_dataset_names = [
@@ -300,29 +311,64 @@ def train(
         for ds, name in zip([train_data], train_dataset_names):
             _preview_dataset(ds, name, tokenizer)
 
-    val_data_sid_prediction = SidSFTDataset(train_file=eval_file, tokenizer=tokenizer, max_len=cutoff_len,  sample=sample, seed=seed, category=category, test=False, mask_assistant=True)
-    val_data_title2sid_translation = SidItemFeatDataset(item_file=item_meta_path, index_file=sid_index_path, tokenizer=tokenizer, max_len=cutoff_len,  sample=sample, seed=seed, category=category, task_type='title2sid', test=False, mask_assistant=True)
-    val_data_sid2title_translation = SidItemFeatDataset(item_file=item_meta_path, index_file=sid_index_path, tokenizer=tokenizer, max_len=cutoff_len,  sample=sample, seed=seed, category=category, task_type='sid2title', test=False, mask_assistant=True)
-    print("LOAD DATA FINISHED")    
-    
+    val_data_sid_prediction = SidSFTDataset(
+        train_file=eval_file,
+        tokenizer=tokenizer,
+        max_len=cutoff_len,
+        sample=sample,
+        seed=seed,
+        category=category,
+        test=False,
+        mask_assistant=True,
+    )
+    val_data_title2sid_translation = SidItemFeatDataset(
+        item_file=item_meta_path,
+        index_file=sid_index_path,
+        tokenizer=tokenizer,
+        max_len=cutoff_len,
+        sample=sample,
+        seed=seed,
+        category=category,
+        task_type="title2sid",
+        test=False,
+        mask_assistant=True,
+    )
+    val_data_sid2title_translation = SidItemFeatDataset(
+        item_file=item_meta_path,
+        index_file=sid_index_path,
+        tokenizer=tokenizer,
+        max_len=cutoff_len,
+        sample=sample,
+        seed=seed,
+        category=category,
+        task_type="sid2title",
+        test=False,
+        mask_assistant=True,
+    )
+    print("LOAD DATA FINISHED")
+
     if resume_from_checkpoint:
-        checkpoint_name = os.path.join(
-            resume_from_checkpoint, "pytorch_model.bin"
-        )  # Full checkpoint
+        checkpoint_name = os.path.join(resume_from_checkpoint, "pytorch_model.bin")  # Full checkpoint
 
     if not ddp and torch.cuda.device_count() > 1:
         model.is_parallelizable = True
         model.model_parallel = True
-    
+
     sample_frac = 1
     hf_train_dataset = HFDataset.from_dict({k: [v[k] for v in train_data] for k in train_data[0].keys()})
     hf_train_dataset = hf_train_dataset.shuffle(seed=42).select(range(int(sample_frac * len(hf_train_dataset))))
-    hf_val_dataset = HFDataset.from_dict({k: [v[k] for v in val_data_sid_prediction] for k in val_data_sid_prediction[0].keys()}).shuffle(seed=seed)
+    hf_val_dataset = HFDataset.from_dict(
+        {k: [v[k] for v in val_data_sid_prediction] for k in val_data_sid_prediction[0].keys()}
+    ).shuffle(seed=seed)
     hf_val_dataset = hf_val_dataset.shuffle(seed=42)
     # additional eval set for translation performance
-    hf_eval_dataset_title2sid_translation = HFDataset.from_dict({k: [v[k] for v in val_data_title2sid_translation] for k in val_data_title2sid_translation[0].keys()}).shuffle(seed=seed)
+    hf_eval_dataset_title2sid_translation = HFDataset.from_dict(
+        {k: [v[k] for v in val_data_title2sid_translation] for k in val_data_title2sid_translation[0].keys()}
+    ).shuffle(seed=seed)
     hf_eval_dataset_title2sid_translation = hf_eval_dataset_title2sid_translation.shuffle(seed=42)
-    hf_eval_dataset_sid2title_translation = HFDataset.from_dict({k: [v[k] for v in val_data_sid2title_translation] for k in val_data_sid2title_translation[0].keys()}).shuffle(seed=seed)
+    hf_eval_dataset_sid2title_translation = HFDataset.from_dict(
+        {k: [v[k] for v in val_data_sid2title_translation] for k in val_data_sid2title_translation[0].keys()}
+    ).shuffle(seed=seed)
     hf_eval_dataset_sid2title_translation = hf_eval_dataset_sid2title_translation.shuffle(seed=42)
 
     extra_eval_sets = {
@@ -363,7 +409,6 @@ def train(
             save_strategy="epoch",
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-
             output_dir=output_dir,
             save_total_limit=10,
             load_best_model_at_end=True,
@@ -374,10 +419,10 @@ def train(
         data_collator=transformers.DataCollatorForSeq2Seq(
             tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
         ),
-        callbacks = [
+        callbacks=[
             EarlyStoppingCallback(early_stopping_patience=5),
         ],
-        # optimizers=(optimizer, lr_scheduler) 
+        # optimizers=(optimizer, lr_scheduler)
     )
     model.config.use_cache = False
 
@@ -386,12 +431,11 @@ def train(
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     # trainer.save_model(output_dir)
-    
+
     model.state_dict()
     output_dir = os.path.join(output_dir, "final_checkpoint")
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
-
 
 
 if __name__ == "__main__":

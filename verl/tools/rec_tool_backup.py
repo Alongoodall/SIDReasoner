@@ -84,7 +84,7 @@ class RecTool(BaseTool):
 
         self._instance_dict[instance_id]["query"] = query
         user_response = await self.get_chat_response(instance_id)
-        
+
         # a constant penalty for launching the chat. Change this later.
         tool_reward = -0.01
         # update the reward
@@ -99,7 +99,7 @@ class RecTool(BaseTool):
         intention = self._instance_dict[instance_id]["intention"]
 
         # 构造用于 OpenAI 的 prompt
-        full_prompt = f'''You are acting as a simulated user in an online shopping recommender system.
+        full_prompt = f"""You are acting as a simulated user in an online shopping recommender system.
 
 GOAL:
 - You have a predefined intent profile (e.g., likes/dislikes certain genres).
@@ -115,9 +115,9 @@ INPUT VARIABLES:
 
 QUERY:
 - {query}
-'''
+"""
 
-        openai_api_key = os.getenv('OPENAI_API_KEY')
+        openai_api_key = os.getenv("OPENAI_API_KEY")
         client = OpenAI(api_key=openai_api_key)
 
         response = await client.chat.completions.create(
@@ -126,10 +126,9 @@ QUERY:
         )
         response_str = response.choices[0].message.content
         return response_str
-    
+
     async def calc_reward(self, instance_id: str, **kwargs) -> float:
         return 0.0
 
     async def release(self, instance_id: str, **kwargs) -> None:
         del self._instance_dict[instance_id]
-

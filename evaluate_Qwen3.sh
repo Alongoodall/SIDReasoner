@@ -1,16 +1,29 @@
 #!/bin/bash
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus=2
+#SBATCH --job-name=sid-eval
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=08:00:00
+#SBATCH --output=slurm_output/%x-%j.out
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; then
+    SCRIPT_DIR="${SLURM_SUBMIT_DIR}"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 cd "$SCRIPT_DIR"
 
-CATEGORY="Office_Products"
-EXP_NAME="./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint"
-TEST_FILE="./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv"
-INFO_FILE="./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt"
-CUDA_LIST="0 1"
-CUDA_LIST_CSV="0,1"
+source ./scripts/snellius_env.sh
+
+CATEGORY="${CATEGORY:-Office_Products}"
+EXP_NAME="${EXP_NAME:-./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint}"
+TEST_FILE="${TEST_FILE:-./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv}"
+INFO_FILE="${INFO_FILE:-./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt}"
+CUDA_LIST="${CUDA_LIST:-0 1}"
+CUDA_LIST_CSV="${CUDA_LIST_CSV:-0,1}"
 
 dir1=$(basename "$(dirname "$EXP_NAME")")
 dir2=$(basename "$EXP_NAME")
@@ -32,14 +45,14 @@ echo "Creating temp directory: ${temp_dir}"
 mkdir -p "${temp_dir}"
 
 echo "Splitting test data..."
-python ./split.py --input_path "${TEST_FILE}" --output_path "${temp_dir}" --cuda_list "${CUDA_LIST_CSV}"
+${PYTHON_CMD} ./split.py --input_path "${TEST_FILE}" --output_path "${temp_dir}" --cuda_list "${CUDA_LIST_CSV}"
 
 echo "Starting parallel evaluation (STANDARD MODE)..."
 for i in ${CUDA_LIST}
 do
     if [[ -f "${temp_dir}/${i}.csv" ]]; then
         echo "Starting evaluation on GPU ${i} for category ${CATEGORY}"
-        CUDA_VISIBLE_DEVICES=${i} python -u ./evaluate_Qwen3.py \
+        CUDA_VISIBLE_DEVICES=${i} ${PYTHON_CMD} -u ./evaluate_Qwen3.py \
             --base_model "${EXP_NAME}" \
             --info_file "${INFO_FILE}" \
             --category "${CATEGORY}" \
@@ -76,7 +89,7 @@ actual_cuda_list="${actual_cuda_list%,}"
 
 echo "Merging results from GPUs: ${actual_cuda_list}"
 
-python ./merge.py \
+${PYTHON_CMD} ./merge.py \
     --input_path "${temp_dir}" \
     --output_path "${output_dir}/final_result_${CATEGORY}.json" \
     --cuda_list "${actual_cuda_list}"
@@ -87,7 +100,7 @@ if [[ ! -f "${output_dir}/final_result_${CATEGORY}.json" ]]; then
 fi
 
 echo "Calculating metrics..."
-python ./calc.py \
+${PYTHON_CMD} ./calc.py \
     --path "${output_dir}/final_result_${CATEGORY}.json" \
     --item_path "${INFO_FILE}"
 

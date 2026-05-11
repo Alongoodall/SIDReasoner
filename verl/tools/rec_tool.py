@@ -66,7 +66,7 @@ class RecTool(BaseTool):
         assert "embedding_path" in config, "embedding_path is required in rec_tool config"
         # load item embeddings
         self.item_embedding = np.load(config["embedding_path"])
-        
+
         self._instance_dict = {}
 
     def get_openai_tool_schema(self) -> OpenAIFunctionToolSchema:
@@ -90,7 +90,7 @@ class RecTool(BaseTool):
 
         self._instance_dict[instance_id]["query"] = query
         user_response = await self.get_chat_response(instance_id)
-        
+
         # a constant penalty for launching the chat. Change this later.
         tool_reward = -0.01
         # update the reward
@@ -105,7 +105,7 @@ class RecTool(BaseTool):
         intention = self._instance_dict[instance_id]["intention"]
 
         # 构造用于 OpenAI 的 prompt
-        full_prompt = f'''You are acting as a simulated user in an online shopping recommender system.
+        full_prompt = f"""You are acting as a simulated user in an online shopping recommender system.
 
 GOAL:
 - You have a predefined intent profile (e.g., likes/dislikes certain genres).
@@ -122,7 +122,7 @@ INPUT VARIABLES:
 
 QUERY:
 - {query}
-'''
+"""
 
         # openai_api_key = os.getenv('OPENAI_API_KEY')
         # client = OpenAI(api_key=openai_api_key)
@@ -134,17 +134,17 @@ QUERY:
         # response_str = response.choices[0].message.content
 
         response_str = await asyncio.to_thread(
-            lambda: OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-                    .chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[{"role":"user","content":full_prompt}]
-                    ).choices[0].message.content
+            lambda: (
+                OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                .chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": full_prompt}])
+                .choices[0]
+                .message.content
+            )
         )
         return response_str
-    
+
     async def calc_reward(self, instance_id: str, **kwargs) -> float:
         return 0.0
 
     async def release(self, instance_id: str, **kwargs) -> None:
         del self._instance_dict[instance_id]
-

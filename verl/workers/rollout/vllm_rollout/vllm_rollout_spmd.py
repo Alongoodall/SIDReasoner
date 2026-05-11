@@ -75,11 +75,10 @@ def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> list[in
     return token_ids
 
 
-
 def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
     """
-    Truncate a token sequence at the first occurrence of `marker` within the 
-    last `clip_chars` tokens. If the marker is found, keep tokens up to and 
+    Truncate a token sequence at the first occurrence of `marker` within the
+    last `clip_chars` tokens. If the marker is found, keep tokens up to and
     including the marker. If not found, return the original sequence.
 
     Args:
@@ -88,7 +87,7 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
         clip_chars (int): Number of tokens from the end to search for the marker.
 
     Returns:
-        List[int]: The truncated token sequence, or the original sequence 
+        List[int]: The truncated token sequence, or the original sequence
                    if the marker is not found.
     """
     m = len(marker)
@@ -96,7 +95,7 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
     search_start = max(0, len(tokens) - clip_chars - m + 1)
 
     for i in range(search_start, len(tokens) - m + 1):
-        if tokens[i:i + m] == marker:
+        if tokens[i : i + m] == marker:
             return tokens[: i + m]  # Keep marker included
 
     # Marker not found → return original (format reward will be 0)
@@ -104,6 +103,8 @@ def truncate_at_end_think(tokens, marker=[151668, 271], clip_chars=20):
 
 
 _SOLUTION_CLIP_CHARS = 100
+
+
 def extract_content_after_think(output: str) -> str | None:
     if len(output) > _SOLUTION_CLIP_CHARS:
         output = output[-_SOLUTION_CLIP_CHARS:]
@@ -122,14 +123,14 @@ def vllm_beam_search_concat(
     params,
     beam_width: int = 10,
     depth: int = 3,
-    sep: str = "<|beam_sep|>\n"  # or any special marker
+    sep: str = "<|beam_sep|>\n",  # or any special marker
 ):
     beam_params = BeamSearchParams(
         beam_width=beam_width,
         max_tokens=depth,
         temperature=0.0,
         length_penalty=0.0,
-        # logprobs=None, 
+        # logprobs=None,
     )
     prompts = [{"prompt_token_ids": _} for _ in prompts_ids]
     all_beams = llm.beam_search(
@@ -153,10 +154,10 @@ def vllm_beam_search_concat(
             else:
                 continuation = continuation.strip()
             pieces.append(continuation)
-        
+
         concatenated_text = sep.join(pieces)
         concatenated.append(concatenated_text)
-    
+
     # --- Convert concatenated strings to token id sequences ---
     # concatenated_ids = [
     #     tokenizer.encode(text, add_special_tokens=False)
@@ -166,7 +167,6 @@ def vllm_beam_search_concat(
     # concatenated_ids = [ids[:max_response_length] for ids in concatenated_ids]
 
     return concatenated
-
 
 
 class vLLMRollout(BaseRollout):
@@ -305,13 +305,14 @@ class vLLMRollout(BaseRollout):
         self.tokenizer = tokenizer
         self.truncate_marker = self.tokenizer.encode("</think>\n\n")
 
-        self.activate_beam_search = ("sid_beam_size" in config) and ("sid_length" in config) and (config.sid_beam_size > 1)
+        self.activate_beam_search = (
+            ("sid_beam_size" in config) and ("sid_length" in config) and (config.sid_beam_size > 1)
+        )
         # assert "sid_beam_size" in config, "Please specify sid_beam_size in config for vllm beam search."
         # assert "sid_length" in config, "Please specify sid_length in config for vllm beam search."
         if self.activate_beam_search:
-            self.sid_beam_size = config['sid_beam_size']
-            self.num_sid_tokens = config['sid_length']
-
+            self.sid_beam_size = config["sid_beam_size"]
+            self.num_sid_tokens = config["sid_length"]
 
     @contextmanager
     def update_sampling_params(self, **kwargs):
@@ -361,7 +362,7 @@ class vLLMRollout(BaseRollout):
         eos_token_id = prompts.meta_info["eos_token_id"]
 
         batch_size = idx.size(0)
-        
+
         non_tensor_batch = prompts.non_tensor_batch
         if "raw_prompt_ids" not in non_tensor_batch:
             non_tensor_batch["raw_prompt_ids"] = np.array(
@@ -440,9 +441,11 @@ class vLLMRollout(BaseRollout):
                     response_ids = output.outputs[sample_id].token_ids
                     # the generated responses are truncated at </think>\n\n
                     response.append(response_ids)
-                    
+
                     if self.activate_beam_search:
-                        response_ids_truncated = truncate_at_end_think(response_ids, marker=self.truncate_marker, clip_chars=20)
+                        response_ids_truncated = truncate_at_end_think(
+                            response_ids, marker=self.truncate_marker, clip_chars=20
+                        )
                         response_reasonings.append(response_ids_truncated)
                     if self.config.calculate_log_probs:
                         curr_log_prob = []
@@ -453,7 +456,9 @@ class vLLMRollout(BaseRollout):
             # response: list of token ids (bs * n, response_length)
             # next step: performance beam search for self.num_sid_tokens digits.
             if self.activate_beam_search:
-                input_prompt_ids = [vllm_inputs[i]['prompt_token_ids'] + response_reasonings[i] for i in range(batch_size)]
+                input_prompt_ids = [
+                    vllm_inputs[i]["prompt_token_ids"] + response_reasonings[i] for i in range(batch_size)
+                ]
                 response_beam_search = vllm_beam_search_concat(
                     self.inference_engine,
                     self.tokenizer,
@@ -464,7 +469,7 @@ class vLLMRollout(BaseRollout):
                 )
                 # non_tensor_batch['beam_search_results']
                 # breakpoint()
-                non_tensor_batch['beam_search_results'] = np.array(response_beam_search)
+                non_tensor_batch["beam_search_results"] = np.array(response_beam_search)
 
             # breakpoint()
 

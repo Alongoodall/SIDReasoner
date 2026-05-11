@@ -92,7 +92,7 @@ class RecTool(BaseTool):
         intention = self._instance_dict[instance_id]["intention"]
 
         # 构造用于 OpenAI 的 prompt
-        full_prompt = f'''You are acting as a simulated user in an online shopping recommender system.
+        full_prompt = f"""You are acting as a simulated user in an online shopping recommender system.
 
 GOAL:
 - You have a predefined intent profile (e.g., likes/dislikes certain genres).
@@ -108,9 +108,9 @@ INPUT VARIABLES:
 
 QUERY:
 - {query}
-'''
+"""
 
-        openai_api_key = os.getenv('OPENAI_API_KEY')
+        openai_api_key = os.getenv("OPENAI_API_KEY")
         client = OpenAI(api_key=openai_api_key)
 
         response = await client.chat.completions.create(
@@ -128,4 +128,3 @@ QUERY:
         # 清理状态
         self._locks.pop(instance_id, None)
         self._counts.pop(instance_id, None)
-

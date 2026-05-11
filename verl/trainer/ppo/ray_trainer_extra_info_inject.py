@@ -734,8 +734,8 @@ class RayPPOTrainer:
 
             # breakpoint()
             # add ground-truth information for selective beam search generation.
-            extra_rollout_info = test_batch.non_tensor_batch['extra_info']
-            test_gen_batch.non_tensor_batch['extra_info'] = extra_rollout_info
+            extra_rollout_info = test_batch.non_tensor_batch["extra_info"]
+            test_gen_batch.non_tensor_batch["extra_info"] = extra_rollout_info
 
             # pad to be divisible by dp_size
             size_divisor = (
@@ -1170,8 +1170,8 @@ class RayPPOTrainer:
                 )
 
                 # breakpoint()
-                extra_rollout_info = batch.non_tensor_batch['extra_info']
-                gen_batch.non_tensor_batch['extra_info'] = extra_rollout_info
+                extra_rollout_info = batch.non_tensor_batch["extra_info"]
+                gen_batch.non_tensor_batch["extra_info"] = extra_rollout_info
 
                 # pass global_steps to trace
                 gen_batch.meta_info["global_steps"] = self.global_steps

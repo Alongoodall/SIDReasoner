@@ -19,14 +19,16 @@ _SOLUTION_CLIP_CHARS = 300
 
 def extract_solution(solution_str):
     # Find all <answer>...</answer> occurrences (non-greedy)
-    matches = re.findall(r'<answer>(.+?)</answer>', solution_str, flags=re.DOTALL)
+    matches = re.findall(r"<answer>(.+?)</answer>", solution_str, flags=re.DOTALL)
     if not matches:
         return None
     # Return the last occurrence, trimmed
     return matches[-1].strip()
 
 
-def compute_score(data_source, solution_str, ground_truth, extra_info=None, format_score=0.05, score=1.0, tool_penalty_lambda=0.6):
+def compute_score(
+    data_source, solution_str, ground_truth, extra_info=None, format_score=0.05, score=1.0, tool_penalty_lambda=0.6
+):
     if data_source == "recommendation":
         answer = extract_solution(solution_str=solution_str)
         if answer is None:
@@ -35,7 +37,7 @@ def compute_score(data_source, solution_str, ground_truth, extra_info=None, form
             if ground_truth in answer:
                 num_tool_calls = extra_info.get("num_turns", 0) or 0
                 # every tool call generates new reward score by multiplying the score by a penalty factor
-                final_score = score * (tool_penalty_lambda ** num_tool_calls)
+                final_score = score * (tool_penalty_lambda**num_tool_calls)
                 return final_score
             else:
                 return format_score

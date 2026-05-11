@@ -1,5 +1,8 @@
 downloaded_ckpts/*
 .vscode/*
+.venv/
+.cache/
+.ruff_cache/
 __pycache__/*
 analysis/analysis_results/*
 data/Amazon/*
@@ -11,6 +14,8 @@ output_dir/*
 analysis_results/*
 temp/*
 logs/*
+slurm_output/*
+!slurm_output/.gitkeep
 *.whl
 *.pyc
 

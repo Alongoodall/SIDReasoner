@@ -1,95 +1,183 @@
 # SIDReasoner
 
-This is the code implementation for **"SIDReasoner - Reasoning over Semantic IDs Enhances Generative Recommendation"**.
+This repository contains the code for **"SIDReasoner - Reasoning over Semantic IDs Enhances Generative Recommendation"**.
 
-SIDReasoner is a generative recommendation framework that strengthens generative recommenders with reasoning ability over semantic IDs. This repository provides:
-
-- A complete training pipeline, with each training stage integrated into an easy-to-run script.
-- Full training data, including our synthesized enriched alignment corpus.
-- Pretrained model checkpoints.
-
-Our method demonstrates that, with improved SID–language alignment, effective recommendation reasoning can be achieved even under academic-scale training. SIDReasoner is able to associate SIDs with their underlying item semantics, produce coherent natural-language reasoning over interaction histories, and generate recommendations according to the reasoning process. By open-sourcing the pipeline, data, and checkpoints, we aim to facilitate further research on reasoning in generative recommendation.
+SIDReasoner is a generative recommendation framework that strengthens recommendation models with reasoning over semantic IDs. The repository provides the training scripts, evaluation scripts, data download workflow, and a Snellius-ready environment setup.
 
 <p align="center">
-  <img src="assets/SIDReasoner-CaseStudy.png" width="100%" alt="Training">
+  <img src="assets/SIDReasoner-CaseStudy.png" width="100%" alt="SIDReasoner case study">
 </p>
 <p align="center">
   <em>A case study of how SIDReasoner generates interpretable reasoning over SIDs.</em>
 </p>
 
-## Environments
+## Snellius Quick Start
 
-The reinforcement learning stage (Stage 3) in this project is built on top of VERL. We recommend follow the [official installation guide](https://verl.readthedocs.io/en/latest/start/install.html#requirements) to set up the environment. To execute the codes correctly, the following additional packages are required:
+Run these commands from a clean checkout.
 
-- `torch`
-- `transformers`
-- `datasets`
-- `peft`
-- `pandas`
-- `numpy`
-- `fire`
-- `wandb`
-- `tqdm`
-- `accelerate`
-- `bitsandbytes`
+```bash
+git clone <repo-url>
+cd SIDReasoner
+```
 
+Create the Python environment on a compute node:
+
+```bash
+sbatch scripts/setup_uv_env.sh
+```
+
+Download and extract the dataset:
+
+```bash
+make data
+```
+
+Run the three training stages in order. Submit the next job only after the previous one has finished.
+
+```bash
+sbatch sft_Qwen3_enrich.sh
+sbatch sft_reasoning_activation.sh
+sbatch RL_training_script.sh
+```
+
+Merge the RL checkpoint before thinking-mode evaluation. Adjust `global_step_100` if you want a different checkpoint.
+
+```bash
+sbatch merge_fsdp_ckpt.sh ./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor
+```
+
+Run evaluation:
+
+```bash
+sbatch evaluate_Qwen3.sh
+sbatch evaluate_Qwen3_think.sh
+```
+
+Useful monitoring commands:
+
+```bash
+squeue -u $USER
+tail -f slurm_output/*.out
+tail -f logs/*.txt
+tail -f logs/*.log
+```
+
+## Environment
+
+This repository uses `uv` for dependency management. The Python dependencies and linting tools are declared in `pyproject.toml`.
+
+The base runtime stack is pinned for CUDA 12.4, PyTorch 2.6, vLLM 0.8.5, FlashAttention 2.7.4, and FlashInfer 0.2.2. The cuDNN override from the original VERL setup is installed after uv resolves the base environment because Torch pins a different cuDNN package in its dependency metadata.
+
+The Slurm scripts load Snellius modules through `scripts/snellius_env.sh`. The setup job uses the Snellius `2023` module stack with `CUDA/12.4.0` and creates `.venv` with Python 3.10 through uv.
+
+Optional SGLang support:
+
+```bash
+sbatch scripts/setup_uv_env.sh --sglang
+```
+
+Optional Megatron/TransformerEngine support:
+
+```bash
+sbatch scripts/setup_uv_env.sh --megatron
+```
+
+Install both optional stacks:
+
+```bash
+sbatch scripts/setup_uv_env.sh --all
+```
 
 ## Dataset
 
-The datasets can be accessed via this [link](https://drive.google.com/file/d/1S92QvaEs7aAhCwWOUovyb4y5P-pXwUhH/view?usp=sharing). Please download the dataset and ensure the dataset folder is placed under directory ./data/Amazon .
+Download and extract the dataset with:
+
+```bash
+make data
+```
+
+This downloads the Google Drive dataset and places it under:
+
+```text
+data/Amazon
+```
+
+To use a different Google Drive file ID or archive name:
+
+```bash
+make data DATA_FILE_ID="..." DATA_ARCHIVE="data/my_dataset.zip"
+```
 
 ## Training
 
 SIDReasoner follows a three-stage training pipeline.
 
-| Stage | Script | 
-| --- | --- | 
-| Stage 1: Supervised Fine-Tuning | `bash sft_Qwen3_enrich.sh` | 
-| Stage 2: Reasoning Activation | `bash sft_reasoning_activation.sh` |
-| Stage 3: RL Training | `bash RL_training_script.sh` |
+| Stage | Script |
+| --- | --- |
+| Stage 1: Supervised Fine-Tuning | `sft_Qwen3_enrich.sh` |
+| Stage 2: Reasoning Activation | `sft_reasoning_activation.sh` |
+| Stage 3: RL Training | `RL_training_script.sh` |
 
-### Run training
+Run on Snellius:
 
 ```bash
-# Stage 1
-bash sft_Qwen3_enrich.sh
-
-# Stage 2
-bash sft_reasoning_activation.sh
-
-# Stage 3
-bash RL_training_script.sh
+sbatch sft_Qwen3_enrich.sh
+sbatch sft_reasoning_activation.sh
+sbatch RL_training_script.sh
 ```
 
-The training logs are written to `./logs`.
+The scripts write Slurm output to `slurm_output/` and training logs to `logs/`.
 
+Common overrides:
 
-### Checkpoints
-
-To facilitate further research, we release our pretrained model checkpoints, which can be downloaded via this [link](https://huggingface.co/Sober-Clever/SIDReasoner-Models/tree/main).
+```bash
+CATEGORY=Office_Products CUDA_DEVICES=0,1,2,3 NPROC_PER_NODE=4 sbatch sft_Qwen3_enrich.sh
+N_GPUS_PER_NODE=4 NNODES=1 sbatch RL_training_script.sh
+```
 
 ## Evaluation
 
-We provide the scripts to test the model performance under thinking and non-thinking mode:
+Evaluate non-thinking and thinking modes:
 
 ```bash
-# Non-thinking mode.
-bash evaluate_Qwen3.sh
-
-# Thinking mode.
-bash evaluate_Qwen3_think.sh
+sbatch evaluate_Qwen3.sh
+sbatch evaluate_Qwen3_think.sh
 ```
 
-### Stage 3 checkpoint merge
-
-The reasoning evaluation script expects a merged Hugging Face checkpoint named `actor_merged`. If RL training has only produced raw `actor` folders, merge them first:
+Override GPU splits:
 
 ```bash
-python3 ./scripts/merge_fsdp_checkpoint.py \
-  --checkpoint ./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor \
-  --output-dir ./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor_merged
+CUDA_LIST="0 1" CUDA_LIST_CSV="0,1" sbatch evaluate_Qwen3_think.sh
 ```
 
+The thinking-mode evaluation expects a merged Hugging Face checkpoint named `actor_merged`. If RL training only produced raw `actor` folders, merge one first:
+
+```bash
+sbatch merge_fsdp_ckpt.sh ./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor
+```
+
+## Development
+
+Useful Make targets:
+
+```bash
+make data        # download and extract the dataset
+make lint        # run ruff checks
+make format      # format Python files with ruff
+make precommit   # run all pre-commit hooks
+```
+
+Install development hooks:
+
+```bash
+make install-dev
+```
+
+## Checkpoints
+
+Pretrained model checkpoints are available on Hugging Face:
+
+https://huggingface.co/Sober-Clever/SIDReasoner-Models/tree/main
 
 ## Citation
 
@@ -106,4 +194,4 @@ If you find this work useful in your research, please consider citing:
 
 ## Acknowledgement
 
-This repo is built upon [MiniOneRec](https://github.com/AkaliKong/MiniOneRec). 
+This repo is built upon [MiniOneRec](https://github.com/AkaliKong/MiniOneRec).

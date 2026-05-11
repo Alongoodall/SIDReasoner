@@ -732,9 +732,7 @@ class RayPPOTrainer:
             }
             print(f"test_gen_batch meta info: {test_gen_batch.meta_info}")
 
-
             # add ground-truth information for selective beam search generation.
-            
 
             breakpoint()
 

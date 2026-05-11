@@ -1,4 +1,11 @@
 #!/bin/bash
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus=4
+#SBATCH --job-name=sid-stage3-rl
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=32
+#SBATCH --time=48:00:00
+#SBATCH --output=slurm_output/%x-%j.out
 
 # Tested successfully on the hiyouga/verl:ngc-th2.6.0-cu126-vllm0.8.4-flashinfer0.2.2-cxx11abi0 image.
 # It outperforms the Qwen2 7B base model by two percentage points on the test set of GSM8K.
@@ -10,23 +17,29 @@
 set -euo pipefail
 set -x
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; then
+    SCRIPT_DIR="${SLURM_SUBMIT_DIR}"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 cd "$SCRIPT_DIR"
+
+source ./scripts/snellius_env.sh
 
 # ================================
 # Note: please change the number of GPUs and nodes according to your setup.
 # ================================
-n_gpus_per_node=4
-nnodes=1
-experiment_name="Office_Products_stage3_rl_Qwen3-1.7B"
-stage2_checkpoint="./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint"
-log_file="./logs/${experiment_name}.log"
+n_gpus_per_node="${N_GPUS_PER_NODE:-4}"
+nnodes="${NNODES:-1}"
+experiment_name="${EXPERIMENT_NAME:-Office_Products_stage3_rl_Qwen3-1.7B}"
+stage2_checkpoint="${STAGE2_CHECKPOINT:-./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint}"
+log_file="${LOG_FILE:-./logs/${experiment_name}.log}"
 # ================================
 
 mkdir -p ./logs
 
 {
-python3 -m verl.trainer.main_ppo \
+${PYTHON_CMD} -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=./data/Amazon/rec_reasoning_verl/Office_Products/train.parquet \
     data.val_files=./data/Amazon/rec_reasoning_verl/Office_Products/test.parquet \

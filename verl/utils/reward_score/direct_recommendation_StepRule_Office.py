@@ -14,13 +14,13 @@
 
 import re
 from collections import defaultdict
-_SOLUTION_CLIP_CHARS = 50
 
+_SOLUTION_CLIP_CHARS = 50
 
 
 def extract_sid_tokens(s: str) -> list[str]:
     # regex: \( <  任意非 > 字符  +  > \)
-    pattern = r'<[^>]+>'
+    pattern = r"<[^>]+>"
     tokens = re.findall(pattern, s)
     return tokens
 
@@ -41,7 +41,7 @@ def extract_solution(solution_str, method="strict"):
         if len(answer_sids) == 3:
             return answer_sids
     return None
-    
+
 
 def calculate_reward(answer_sids, ground_truth_sids):
     current_score = 0.0
@@ -51,9 +51,8 @@ def calculate_reward(answer_sids, ground_truth_sids):
             current_score *= 2
             if answer_sids[2] == ground_truth_sids[2]:
                 current_score *= 2
-        
-    return current_score
 
+    return current_score
 
 
 def calculate_format_reward(answer_sids, prefix_map):
@@ -85,8 +84,6 @@ def calculate_format_reward(answer_sids, prefix_map):
     return format_scores
 
 
-
-
 # def rule_base_reward(data_source, solution_str, ground_truth, extra_info=None):
 #     answer = extract_solution(solution_str=solution_str)
 #     ground_truth = extract_sid_tokens(ground_truth)[:3]
@@ -97,7 +94,6 @@ def calculate_format_reward(answer_sids, prefix_map):
 #         return 0
 #     else:
 #         return calculate_reward(answer, ground_truth) + format_score
-
 
 
 def construct_prefix_allowed_hashmap(item_info_path):
@@ -126,12 +122,9 @@ def construct_prefix_allowed_hashmap(item_info_path):
     return prefix_map
 
 
-
 class MyRewardComputer:
     def __init__(self):
-        self.sid_hash = construct_prefix_allowed_hashmap(
-            "./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt"
-        )
+        self.sid_hash = construct_prefix_allowed_hashmap("./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt")
 
     def compute(
         self,
@@ -150,9 +143,9 @@ class MyRewardComputer:
             return calculate_reward(answer, ground_truth) + 0.1 * calculate_format_reward(answer, self.sid_hash)
 
 
-
 # ---- 模块级单例（懒加载） ----
 _reward_computer: MyRewardComputer | None = None
+
 
 def _get_reward_computer() -> MyRewardComputer:
     global _reward_computer

@@ -141,7 +141,7 @@ class TaskRunner:
                 print("Using new worker implementation")
             else:
                 raise ValueError(f"Invalid use_legacy_worker_impl: {use_legacy_worker_impl}")
-            
+
             actor_rollout_cls = (
                 AsyncActorRolloutRefWorker
                 if config.actor_rollout_ref.rollout.mode == "async"

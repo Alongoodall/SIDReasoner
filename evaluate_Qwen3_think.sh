@@ -1,20 +1,33 @@
 #!/bin/bash
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus=2
+#SBATCH --job-name=sid-eval-think
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=08:00:00
+#SBATCH --output=slurm_output/%x-%j.out
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; then
+    SCRIPT_DIR="${SLURM_SUBMIT_DIR}"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 cd "$SCRIPT_DIR"
 
-CATEGORY="Office_Products"
-TEST_FILE="./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv"
-INFO_FILE="./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt"
-ITEM_FILE="./data/Amazon/index/Office_Products.item.json"
-INDEX_FILE="./data/Amazon/index/Office_Products.index.json"
-CUDA_LIST="0 1"
-CUDA_LIST_CSV="0,1"
+source ./scripts/snellius_env.sh
 
-STAGE2_MODEL="./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint"
-STAGE3_EXPERIMENT_ROOT="./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B"
+CATEGORY="${CATEGORY:-Office_Products}"
+TEST_FILE="${TEST_FILE:-./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv}"
+INFO_FILE="${INFO_FILE:-./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt}"
+ITEM_FILE="${ITEM_FILE:-./data/Amazon/index/Office_Products.item.json}"
+INDEX_FILE="${INDEX_FILE:-./data/Amazon/index/Office_Products.index.json}"
+CUDA_LIST="${CUDA_LIST:-0 1}"
+CUDA_LIST_CSV="${CUDA_LIST_CSV:-0,1}"
+
+STAGE2_MODEL="${STAGE2_MODEL:-./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint}"
+STAGE3_EXPERIMENT_ROOT="${STAGE3_EXPERIMENT_ROOT:-./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B}"
 
 exp_list=()
 
@@ -67,14 +80,14 @@ do
     mkdir -p "${temp_dir}"
 
     echo "Splitting test data..."
-    python ./split.py --input_path "${TEST_FILE}" --output_path "${temp_dir}" --cuda_list "${CUDA_LIST_CSV}"
+    ${PYTHON_CMD} ./split.py --input_path "${TEST_FILE}" --output_path "${temp_dir}" --cuda_list "${CUDA_LIST_CSV}"
 
     echo "Starting parallel evaluation (STANDARD MODE)..."
     for i in ${CUDA_LIST}
     do
         if [[ -f "${temp_dir}/${i}.csv" ]]; then
             echo "Starting evaluation on GPU ${i} for category ${CATEGORY}"
-            CUDA_VISIBLE_DEVICES=${i} python -u ./evaluate_Qwen3_think.py \
+            CUDA_VISIBLE_DEVICES=${i} ${PYTHON_CMD} -u ./evaluate_Qwen3_think.py \
                 --base_model "${exp_name}" \
                 --info_file "${INFO_FILE}" \
                 --category "${CATEGORY}" \
@@ -113,7 +126,7 @@ do
 
     echo "Merging results from GPUs: ${actual_cuda_list}"
 
-    python ./merge.py \
+    ${PYTHON_CMD} ./merge.py \
         --input_path "${temp_dir}" \
         --output_path "${output_dir}/final_result_thinking_${CATEGORY}.json" \
         --cuda_list "${actual_cuda_list}"
@@ -124,7 +137,7 @@ do
     fi
 
     echo "Calculating metrics..."
-    python ./calc.py \
+    ${PYTHON_CMD} ./calc.py \
         --path "${output_dir}/final_result_thinking_${CATEGORY}.json" \
         --item_path "${INFO_FILE}"
 

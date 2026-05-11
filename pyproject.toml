@@ -1,0 +1,88 @@
+[project]
+name = "sidreasoner"
+version = "0.1.0"
+description = "Training and evaluation code for reasoning over semantic IDs in generative recommendation."
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+  "accelerate",
+  "bitsandbytes",
+  "codetiming",
+  "datasets",
+  "dill",
+  "einops",
+  "fastapi[standard]>=0.115.0",
+  "flash-attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.6cxx11abiFALSE-cp310-cp310-linux_x86_64.whl",
+  "flashinfer-python @ https://github.com/flashinfer-ai/flashinfer/releases/download/v0.2.2.post1/flashinfer_python-0.2.2.post1+cu124torch2.6-cp38-abi3-linux_x86_64.whl",
+  "fire",
+  "grpcio>=1.62.1",
+  "hf-transfer",
+  "hydra-core",
+  "liger-kernel",
+  "mathruler",
+  "numpy<2.0.0",
+  "nvidia-ml-py>=12.560.30",
+  "omegaconf",
+  "opencv-fixer",
+  "opencv-python",
+  "optree>=0.13.0",
+  "pandas",
+  "peft",
+  "pyarrow>=15.0.0",
+  "pybind11",
+  "pydantic>=2.9",
+  "pylatexenc",
+  "qwen-vl-utils",
+  "ray[default]",
+  "safetensors",
+  "sentencepiece",
+  "tensordict==0.6.2",
+  "torch==2.6.0",
+  "torch-memory-saver",
+  "torchaudio==2.6.0",
+  "torchdata",
+  "torchvision==0.21.0",
+  "tqdm",
+  "transformers[hf-xet]>=4.51.0",
+  "triton",
+  "vllm==0.8.5.post1",
+  "wandb",
+]
+
+[dependency-groups]
+dev = [
+  "pre-commit",
+  "ruff",
+]
+
+[tool.uv]
+package = false
+find-links = ["https://flashinfer.ai/whl/cu124/torch2.6/flashinfer-python"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = [
+  "data",
+  "downloaded_ckpts",
+  "logs",
+  "output_dir",
+  "results",
+  "temp",
+  "wandb",
+]
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]
+ignore = [
+  "E501",
+  "E402",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"verl/**/*.py" = ["B", "F401", "F403", "F405", "I001", "UP"]
+"*.py" = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

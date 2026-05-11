@@ -8,7 +8,12 @@ import asyncio
 import aiohttp
 
 from .base_tool import BaseTool
-from .schemas import OpenAIFunctionToolSchema, OpenAIFunctionSchema, OpenAIFunctionParametersSchema, OpenAIFunctionPropertySchema
+from .schemas import (
+    OpenAIFunctionToolSchema,
+    OpenAIFunctionSchema,
+    OpenAIFunctionParametersSchema,
+    OpenAIFunctionPropertySchema,
+)
 from verl.utils.rollout_trace import rollout_trace_op
 
 logger = logging.getLogger(__name__)
@@ -116,8 +121,8 @@ class CRSItemRetrieveTool(BaseTool):
 
         Returns (data, status, error_msg).
         """
-        service_url = self._instance_dict[instance_id]['service_url']
-        timeout_total = float(self._instance_dict[instance_id]['timeout'])
+        service_url = self._instance_dict[instance_id]["service_url"]
+        timeout_total = float(self._instance_dict[instance_id]["timeout"])
 
         session = await self._get_session()
 
