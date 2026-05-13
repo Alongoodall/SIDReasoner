@@ -37,7 +37,7 @@ from verl.utils.megatron_utils import TransformerConfig, convert_config
 from .layers import ParallelQwen2DecoderLayer, ParallelQwen2DecoderLayerRmPad, ParallelQwen2RMSNorm
 
 """
-TODO: 
+TODO:
 1. Add weight initialization. Here we need to be careful on TP weight init.
 2. Add sequence parallel
 3. Load checkpoint from Qwen2 pretrained checkpoint

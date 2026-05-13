@@ -25,7 +25,7 @@ Features we invite the community to contribute:
 To track the progress of verl mcore integration, please refer to the [mcore integration issue](https://github.com/volcengine/verl/issues/1033).
 
 ## How things work now
-To engage the community in contributing, here are the key steps in our mcore integration process and features under development. 
+To engage the community in contributing, here are the key steps in our mcore integration process and features under development.
 
 The huggingface `transformers` is the de facto standard of model zoo while mcore is good at computation efficiency. The main challenge is conversion between the two.
 main steps:
@@ -64,7 +64,7 @@ See function `convert_megatron_model_to_transformers_model` in `verl/utils/megat
 It should be refatored for extensibility and better performance.
 
 ### support the mcore features in verl
-Most of the features of `GPTModel` is out-of-the-box supported in verl through changing the `TransformerConfig`, except those about parallel strategies, such as `expert parallel`. 
+Most of the features of `GPTModel` is out-of-the-box supported in verl through changing the `TransformerConfig`, except those about parallel strategies, such as `expert parallel`.
 Features about parallel strategies should be supported with changes about the online weights conversion(especially the resharding part) and verl work dispatching.
 
 ### checkpointing

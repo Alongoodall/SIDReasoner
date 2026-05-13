@@ -288,9 +288,9 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
 
             infer_tp = self.config.rollout.tensor_model_parallel_size
             dp = self.world_size // infer_tp
-            assert self.world_size % infer_tp == 0, (
-                f"rollout world_size: {self.world_size} is not divisible by infer_tp: {infer_tp}"
-            )
+            assert (
+                self.world_size % infer_tp == 0
+            ), f"rollout world_size: {self.world_size} is not divisible by infer_tp: {infer_tp}"
             rollout_device_mesh = init_device_mesh(
                 get_device_name(), mesh_shape=(dp, infer_tp), mesh_dim_names=["dp", "infer_tp"]
             )
@@ -342,9 +342,9 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
 
             infer_tp = self.config.rollout.tensor_model_parallel_size
             dp = self.world_size // infer_tp
-            assert self.world_size % infer_tp == 0, (
-                f"rollout world_size: {self.world_size} is not divisible by infer_tp: {infer_tp}"
-            )
+            assert (
+                self.world_size % infer_tp == 0
+            ), f"rollout world_size: {self.world_size} is not divisible by infer_tp: {infer_tp}"
             rollout_device_mesh = init_device_mesh(
                 "cpu", mesh_shape=(dp, infer_tp, 1), mesh_dim_names=("dp", "tp", "pp")
             )

@@ -179,7 +179,6 @@ def _get_cosine_schedule_with_warmup_lr_lambda(current_step, *, num_warmup_steps
 def get_cosine_schedule_with_warmup(
     optimizer, num_warmup_steps, num_training_steps, num_cycles: float = 0.5, last_epoch: int = -1
 ):
-
     lr_lambda = partial(
         _get_cosine_schedule_with_warmup_lr_lambda,
         num_warmup_steps=num_warmup_steps,

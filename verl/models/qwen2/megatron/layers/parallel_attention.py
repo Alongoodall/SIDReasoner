@@ -164,9 +164,9 @@ class ParallelQwen2Attention(nn.Module):
 
         # assign values after tp
         tp_size = mpu.get_tensor_model_parallel_world_size()
-        assert self.num_heads % tp_size == 0, (
-            f"num_head must be divisible by tp_size. Got num_head={self.num_heads}, tp_size={tp_size}"
-        )
+        assert (
+            self.num_heads % tp_size == 0
+        ), f"num_head must be divisible by tp_size. Got num_head={self.num_heads}, tp_size={tp_size}"
         assert self.num_key_value_heads % tp_size == 0, (
             f"num_key_value_heads must be divisible by tp_size. Got num_key_value_heads="
             f"{self.num_key_value_heads}, tp_size={tp_size}"

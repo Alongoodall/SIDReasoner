@@ -43,11 +43,11 @@ do
     exp_name_clean="${dir0}__${dir1}__${dir2}"
 
     echo "Processing category: $category with model: $exp_name_clean (STANDARD MODE)"
-    
+
     train_file=$(ls ./data/Amazon/train/${category}*.csv 2>/dev/null | head -1)
     test_file=$(ls ./data/Amazon/test/${category}*.csv 2>/dev/null | head -1)
     info_file=$(ls ./data/Amazon/info/${category}*.txt 2>/dev/null | head -1)
-    
+
     if [[ ! -f "$test_file" ]]; then
         echo "Error: Test file not found for category $category"
         continue
@@ -56,20 +56,20 @@ do
         echo "Error: Info file not found for category $category"
         continue
     fi
-    
+
     temp_dir="./temp/${category}-${exp_name_clean}"
     echo "Creating temp directory: $temp_dir"
     mkdir -p "$temp_dir"
-    
+
     echo "Splitting test data..."
     ${PYTHON_CMD} ./split.py --input_path "$test_file" --output_path "$temp_dir" --cuda_list ${cudalist_v2}
-    
+
     # if [[ ! -f "$temp_dir/0.csv" ]]; then
     #     echo "Error: Data splitting failed for category $category"
     #     continue
     # fi
-    
-    # cudalist="4 5 6 7"  
+
+    # cudalist="4 5 6 7"
     echo "Starting parallel evaluation (STANDARD MODE)..."
     for i in ${cudalist}
     do
@@ -93,13 +93,13 @@ do
     done
     echo "Waiting for all evaluation processes to complete..."
     wait
-    
+
     result_files=$(ls "$temp_dir"/*.json 2>/dev/null | wc -l)
     if [[ $result_files -eq 0 ]]; then
         echo "Error: No result files generated for category $category"
         continue
     fi
-    
+
     output_dir="./results/${exp_name_clean}"
     echo "Creating output directory: $output_dir"
     mkdir -p "$output_dir"
@@ -114,25 +114,25 @@ do
     actual_cuda_list="${actual_cuda_list%,}"
 
     echo "Merging results from GPUs: $actual_cuda_list"
-    
+
     ${PYTHON_CMD} ./merge.py \
         --input_path "$temp_dir" \
         --output_path "$output_dir/final_result_thinking_${category}.json" \
         --cuda_list "$actual_cuda_list"
-    
+
     if [[ ! -f "$output_dir/final_result_thinking_${category}.json" ]]; then
         echo "Error: Result merging failed for category $category"
         continue
     fi
-    
+
     echo "Calculating metrics..."
     ${PYTHON_CMD} ./calc.py \
         --path "$output_dir/final_result_thinking_${category}.json" \
         --item_path "$info_file"
-    
+
     echo "Completed processing for category: $category"
     echo "Results saved to: $output_dir/final_result_thinking_${category}.json"
-    echo "----------------------------------------" 
+    echo "----------------------------------------"
 done
 done
 echo "All categories processed!"

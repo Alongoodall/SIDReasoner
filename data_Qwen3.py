@@ -184,7 +184,7 @@ class SFTData(Dataset):
 
     def pre(self, idx):
         instruction = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-{self.instructs[random.randint(0, len(self.instructs) - 1)]}\n 
+{self.instructs[random.randint(0, len(self.instructs) - 1)]}\n
 """
 
         history = self.get_history(self.data.iloc[idx])
@@ -416,7 +416,7 @@ class EvalSidDataset(Dataset):
         }
 
     def pre(self, idx):
-        instruction = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request. 
+        instruction = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 Can you predict the next possible item that the user may expect?
 """
         history = self.get_history(self.data.iloc[idx])
@@ -583,7 +583,7 @@ class SidItemFeatDataset(Dataset):
             return self.data[idx]
 
         data_point = self.data[idx]
-        instruction = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request. 
+        instruction = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 Answer the question about item identification.
 """
         user_prompt = self.generate_prompt(data_point)
@@ -1014,7 +1014,7 @@ class TitleHistory2SidSFTDataset(Dataset):
         }
 
     def pre(self, idx):
-        instruction = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request. 
+        instruction = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 Based on the user's historical interaction with item titles, predict the semantic ID of the next item they may expect.
 """
         history_data = self.get_history(self.data.iloc[idx])

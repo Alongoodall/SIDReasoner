@@ -32,9 +32,9 @@ def _megatron_calc_global_rank(tp_rank: int = 0, dp_rank: int = 0, pp_rank: int 
     tp_size = mpu.get_tensor_model_parallel_world_size()
     dp_size = mpu.get_data_parallel_world_size()
     pp_size = mpu.get_pipeline_model_parallel_world_size()
-    assert tp_size * dp_size * pp_size == torch.distributed.get_world_size(), (
-        f"{tp_size} x {dp_size} x {pp_size} != {torch.distributed.get_world_size()}"
-    )
+    assert (
+        tp_size * dp_size * pp_size == torch.distributed.get_world_size()
+    ), f"{tp_size} x {dp_size} x {pp_size} != {torch.distributed.get_world_size()}"
     # We only support TP-DP-PP grouping, for correctness when resharding
     return (pp_rank * dp_size + dp_rank) * tp_size + tp_rank
 
@@ -111,10 +111,10 @@ def merge_megatron_ckpt_llama(wrapped_models, config, dtype, is_value_model=Fals
 
     for i, wrapped_model in enumerate(wrapped_models):
         models[i] = unwrap_model(wrapped_model, (torchDDP, LocalDDP, Float16Module))
-        assert len(models[i].model.layers) == num_layers_per_model, (
-            "len model layers {} not equal to num_layers_per_model {}".format(
-                len(models[i].model.layers), num_layers_per_model
-            )
+        assert (
+            len(models[i].model.layers) == num_layers_per_model
+        ), "len model layers {} not equal to num_layers_per_model {}".format(
+            len(models[i].model.layers), num_layers_per_model
         )
 
     state_dict = dict()

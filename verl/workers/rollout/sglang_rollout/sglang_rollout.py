@@ -327,9 +327,9 @@ class SGLangRollout(BaseRollout):
         self._device_mesh_cpu = device_mesh_cpu
         os.environ.setdefault("SGL_DISABLE_TP_MEMORY_INBALANCE_CHECK", "true")
         self.tensor_parallel_size = self.config.get("tensor_model_parallel_size", 1)
-        assert self.tensor_parallel_size <= dist.get_world_size(), (
-            "tensor parallel size should be less than or equal to the world size"
-        )
+        assert (
+            self.tensor_parallel_size <= dist.get_world_size()
+        ), "tensor parallel size should be less than or equal to the world size"
         self.train_tp = kwargs.get("train_tp", None)
         if self.train_tp is not None:
             # deployed with megatron
@@ -373,7 +373,7 @@ class SGLangRollout(BaseRollout):
             self.config.max_model_len = self.config.prompt_length + self.config.response_length
         assert (
             self.config.max_model_len >= self.config.prompt_length + self.config.response_length
-        ), f"""max_model_len should be greater than total sequence length (prompt_length + response_length): 
+        ), f"""max_model_len should be greater than total sequence length (prompt_length + response_length):
             {self.config.max_model_len} >= {self.config.prompt_length} + {self.config.response_length}"""
         max_position_embeddings = None
         if hasattr(model_hf_config, "max_position_embeddings"):
@@ -388,9 +388,9 @@ class SGLangRollout(BaseRollout):
             raise ValueError("max_position_embeddings not found in model_hf_config")
         rope_scaling_config = getattr(model_hf_config, "rope_scaling", None)
         if not rope_scaling_config:
-            assert max_position_embeddings >= self.config.prompt_length + self.config.response_length, (
-                "model context length should be greater than total sequence length"
-            )
+            assert (
+                max_position_embeddings >= self.config.prompt_length + self.config.response_length
+            ), "model context length should be greater than total sequence length"
         else:
             # handle type where there's a length extend factor
             # see https://qwen.readthedocs.io/en/latest/deployment/vllm.html#extended-context-support
@@ -1097,8 +1097,8 @@ class SGLangRollout(BaseRollout):
                 == req.attention_mask.shape[-1]
                 == req.position_ids.shape[-1]
                 == req.loss_mask.shape[-1]
-            ), f"""Request {req.request_id} has different length of 
-                {req.input_ids.shape[-1]=}, {req.attention_mask.shape[-1]=}, 
+            ), f"""Request {req.request_id} has different length of
+                {req.input_ids.shape[-1]=}, {req.attention_mask.shape[-1]=},
                 {req.position_ids.shape[-1]=}, {req.loss_mask.shape[-1]=}"""
             error_message_lines = [
                 f"""Request {req.request_id} has input_ids length {req.input_ids.shape[-1]}
@@ -1116,7 +1116,7 @@ class SGLangRollout(BaseRollout):
             response_ids.append(req.response_ids.to(tgt_device).squeeze(0))
             if req.response_ids.shape[-1] > self.config.response_length:
                 logger.warning(
-                    f"""{req.request_id=} has response_ids length {req.response_ids.shape[-1]} 
+                    f"""{req.request_id=} has response_ids length {req.response_ids.shape[-1]}
                     greater than max_response_len {self.config.response_length},\n{req=}"""
                 )
             prompt_attention_mask.append(req.prompt_attention_mask.to(tgt_device).squeeze(0))
@@ -1225,9 +1225,9 @@ class SGLangRollout(BaseRollout):
         )
 
     def _preprocess_prompt_to_async_rollout_requests(self, prompts: DataProto, n: int = 1) -> list[AsyncRolloutRequest]:
-        assert "raw_prompt" in prompts.non_tensor_batch, (
-            "need data.return_raw_chat=True, due to no official way do parse_messages"
-        )
+        assert (
+            "raw_prompt" in prompts.non_tensor_batch
+        ), "need data.return_raw_chat=True, due to no official way do parse_messages"
         logger.info(
             "n is deprecated for SGLang rollout since ray ppo trainer will repeat the prompts for rollout.n times"
         )
@@ -1279,10 +1279,10 @@ class SGLangRollout(BaseRollout):
                 tokenization_sanity_check_mode=self.config.multi_turn.tokenization_sanity_check_mode,
                 processing_class=self.processing_class,
             )
-            error_message = f"""Request {req.request_id} has mismatched lengths: 
-            input_ids={req.input_ids.shape[-1]}, 
-            attention_mask={req.attention_mask.shape[-1]}, 
-            position_ids={req.position_ids.shape[-1]}, 
+            error_message = f"""Request {req.request_id} has mismatched lengths:
+            input_ids={req.input_ids.shape[-1]},
+            attention_mask={req.attention_mask.shape[-1]},
+            position_ids={req.position_ids.shape[-1]},
             loss_mask={req.loss_mask.shape[-1]}"""
             assert (
                 req.input_ids.shape[-1]

@@ -188,9 +188,9 @@ class vLLMRollout(BaseRollout):
         self.config = config
 
         tensor_parallel_size = self.config.get("tensor_model_parallel_size", 1)
-        assert tensor_parallel_size <= torch.distributed.get_world_size(), (
-            "tensor parallel size should be less than or equal to the world size"
-        )
+        assert (
+            tensor_parallel_size <= torch.distributed.get_world_size()
+        ), "tensor parallel size should be less than or equal to the world size"
         max_num_batched_tokens = self.config.get("max_num_batched_tokens", 8192)
 
         if kwargs.get("train_tp") is not None:
@@ -216,9 +216,9 @@ class vLLMRollout(BaseRollout):
                 max_position_embeddings = model_hf_config.text_config.max_position_embeddings
             if max_position_embeddings is None:
                 raise ValueError("max_position_embeddings not found in model_hf_config")
-            assert max_position_embeddings >= config.prompt_length + config.response_length, (
-                "model context length should be greater than total sequence length"
-            )
+            assert (
+                max_position_embeddings >= config.prompt_length + config.response_length
+            ), "model context length should be greater than total sequence length"
         else:
             # handle type where there's a length extend factor
             # see https://qwen.readthedocs.io/en/latest/deployment/vllm.html#extended-context-support

@@ -527,15 +527,15 @@ class RayPPOTrainer:
             config.actor_rollout_ref.actor.get("ulysses_sequence_parallel_size", 1) > 1
             or config.actor_rollout_ref.ref.get("ulysses_sequence_parallel_size", 1) > 1
         ):
-            assert config.actor_rollout_ref.model.use_remove_padding, (
-                "When using sequence parallelism for actor/ref policy, you must enable `use_remove_padding`."
-            )
+            assert (
+                config.actor_rollout_ref.model.use_remove_padding
+            ), "When using sequence parallelism for actor/ref policy, you must enable `use_remove_padding`."
 
         if self.use_critic and config.critic.strategy in {"fsdp", "fsdp2"}:
             if config.critic.get("ulysses_sequence_parallel_size", 1) > 1:
-                assert config.critic.model.use_remove_padding, (
-                    "When using sequence parallelism for critic, you must enable `use_remove_padding`."
-                )
+                assert (
+                    config.critic.model.use_remove_padding
+                ), "When using sequence parallelism for critic, you must enable `use_remove_padding`."
 
         if config.data.get("val_batch_size", None) is not None:
             print(
@@ -546,9 +546,9 @@ class RayPPOTrainer:
 
         # check eval config
         if config.actor_rollout_ref.rollout.val_kwargs.do_sample:
-            assert config.actor_rollout_ref.rollout.temperature > 0, (
-                "validation gen temperature should be greater than 0 when enabling do_sample"
-            )
+            assert (
+                config.actor_rollout_ref.rollout.temperature > 0
+            ), "validation gen temperature should be greater than 0 when enabling do_sample"
 
         print("[validate_config] All configuration checks passed successfully!")
 
@@ -890,9 +890,9 @@ class RayPPOTrainer:
             wg_kwargs["ray_wait_register_center_timeout"] = self.config.trainer.ray_wait_register_center_timeout
         if OmegaConf.select(self.config.trainer, "profile_steps") is not None:
             wg_kwargs["profile_steps"] = OmegaConf.select(self.config.trainer, "profile_steps")
-            assert OmegaConf.select(self.config.trainer, "worker_nsight_options") is not None, (
-                "worker_nsight_options must be set when profile_steps is set"
-            )
+            assert (
+                OmegaConf.select(self.config.trainer, "worker_nsight_options") is not None
+            ), "worker_nsight_options must be set when profile_steps is set"
             wg_kwargs["worker_nsight_options"] = OmegaConf.to_container(
                 OmegaConf.select(self.config.trainer, "worker_nsight_options")
             )
@@ -1016,9 +1016,9 @@ class RayPPOTrainer:
         else:
             if self.config.trainer.resume_mode == "resume_path":
                 assert isinstance(self.config.trainer.resume_from_path, str), "resume ckpt must be str type"
-                assert "global_step_" in self.config.trainer.resume_from_path, (
-                    "resume ckpt must specify the global_steps"
-                )
+                assert (
+                    "global_step_" in self.config.trainer.resume_from_path
+                ), "resume ckpt must specify the global_steps"
                 global_step_folder = self.config.trainer.resume_from_path
                 if not os.path.isabs(global_step_folder):
                     working_dir = os.getcwd()

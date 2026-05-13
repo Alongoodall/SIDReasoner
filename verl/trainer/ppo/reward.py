@@ -166,9 +166,9 @@ def compute_reward_async(data: DataProto, config=None, tokenizer=None, reward_fn
     This is meant to be run in a separate Ray worker.
     """
     if reward_fn is None:
-        assert config is not None and tokenizer is not None, (
-            "config and tokenizer must not be None when reward_fn is None"
-        )
+        assert (
+            config is not None and tokenizer is not None
+        ), "config and tokenizer must not be None when reward_fn is None"
         import warnings
 
         warnings.warn("using config and tokenizer with compute_reward_async is deprecated", stacklevel=2)

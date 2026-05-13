@@ -207,7 +207,7 @@ update_weights_bucket_megabytes: 512
 
 # trace rollout data
 trace:
-  
+
   # trace backend, support mlflow, weave
   backend: null
 

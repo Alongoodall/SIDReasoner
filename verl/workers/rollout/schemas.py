@@ -273,12 +273,12 @@ class AsyncRolloutRequest(BaseModel):
                 video_grid_thw = multi_modal_inputs.get("video_grid_thw")
                 second_per_grid_ts = multi_modal_inputs.get("second_per_grid_ts")
 
-            assert input_ids.dim() == 2 and input_ids.shape[0] == 1, (
-                f"input_ids should be 2D with batch size 1, but got shape {input_ids.shape}"
-            )
-            assert attention_mask.dim() == 2 and attention_mask.shape[0] == 1, (
-                f"attention_mask should be 2D with batch size 1, but got shape {attention_mask.shape}"
-            )
+            assert (
+                input_ids.dim() == 2 and input_ids.shape[0] == 1
+            ), f"input_ids should be 2D with batch size 1, but got shape {input_ids.shape}"
+            assert (
+                attention_mask.dim() == 2 and attention_mask.shape[0] == 1
+            ), f"attention_mask should be 2D with batch size 1, but got shape {attention_mask.shape}"
             new_position_ids = get_rope_index(
                 processing_class,
                 input_ids=input_ids.squeeze(0),
@@ -325,7 +325,7 @@ class AsyncRolloutRequest(BaseModel):
             == self.attention_mask.shape[-1]
             == self.position_ids.shape[-1]
             == self.loss_mask.shape[-1]
-        ), f"""Request {self.request_id} has different length of {self.input_ids.shape[-1]=}, 
+        ), f"""Request {self.request_id} has different length of {self.input_ids.shape[-1]=},
             {self.attention_mask.shape[-1]=}, {self.position_ids.shape[-1]=}, {self.loss_mask.shape[-1]=}"""
 
     def _update_multi_modal_inputs(self, new_multi_modal_inputs: dict[str, torch.Tensor]) -> None:
@@ -655,7 +655,7 @@ class AsyncRolloutRequest(BaseModel):
             == self.attention_mask.shape[-1]
             == self.position_ids.shape[-1]
             == self.loss_mask.shape[-1]
-        ), f"""Request {self.request_id} has different length of {self.input_ids.shape[-1]=}, 
+        ), f"""Request {self.request_id} has different length of {self.input_ids.shape[-1]=},
             {self.attention_mask.shape[-1]=}, {self.position_ids.shape[-1]=}, {self.loss_mask.shape[-1]=}"""
 
     def truncate_output_ids(

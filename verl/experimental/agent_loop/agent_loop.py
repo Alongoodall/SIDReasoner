@@ -306,9 +306,9 @@ class AgentLoopWorker:
             validate=trajectory["validate"],
             name="agent_loop",
         ):
-            assert agent_name in _agent_loop_registry, (
-                f"Agent loop {agent_name} not registered, registered agent loops: {_agent_loop_registry.keys()}"
-            )
+            assert (
+                agent_name in _agent_loop_registry
+            ), f"Agent loop {agent_name} not registered, registered agent loops: {_agent_loop_registry.keys()}"
 
             agent_loop_config = _agent_loop_registry[agent_name]
             agent_loop = hydra.utils.instantiate(
@@ -359,9 +359,9 @@ class AgentLoopWorker:
             return_attention_mask=False,
         )
         response_mask = outputs["input_ids"]
-        assert response_ids.shape == response_mask.shape, (
-            f"mismatch in response_ids and response_mask shape: {response_ids.shape} vs {response_mask.shape}"
-        )
+        assert (
+            response_ids.shape == response_mask.shape
+        ), f"mismatch in response_ids and response_mask shape: {response_ids.shape} vs {response_mask.shape}"
         response_mask = response_mask * response_attention_mask
 
         input_ids = torch.cat([prompt_ids, response_ids], dim=1)

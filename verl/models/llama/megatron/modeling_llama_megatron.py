@@ -36,7 +36,7 @@ from verl.utils.megatron_utils import TransformerConfig, convert_config
 from .layers import ParallelLlamaDecoderLayer, ParallelLlamaDecoderLayerRmPad, ParallelLlamaRMSNorm
 
 """
-TODO: 
+TODO:
 1. Add weight initialization. Here we need to be careful on TP weight init.
 2. Add sequence parallel
 3. Load checkpoint from meta LLama pretrained checkpoint
@@ -545,9 +545,9 @@ class ParallelLlamaForCausalLMRmPadPP(nn.Module):
         self.model = ParallelLlamaModelRmPadPP(
             config, megatron_config=megatron_config, pre_process=pre_process, post_process=post_process
         )
-        assert share_embeddings_and_output_weights is False, (
-            "Llama Model not supports sharing embedding and output weights"
-        )
+        assert (
+            share_embeddings_and_output_weights is False
+        ), "Llama Model not supports sharing embedding and output weights"
         self.share_embeddings_and_output_weights = share_embeddings_and_output_weights
         self.vocab_size = config.vocab_size
         self.pre_process = pre_process

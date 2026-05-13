@@ -94,9 +94,9 @@ def logprobs_from_logits(logits, labels, inplace_backward=True):
 
 def logprobs_from_logits_flash_attn(logits, labels, inplace_backward=True):
     output = cross_entropy_loss(logits, labels, inplace_backward=inplace_backward)
-    assert isinstance(output, tuple), (
-        "please make sure flash-attn>=2.4.3 where cross_entropy_loss returns Tuple[losses, z_losses]."
-    )
+    assert isinstance(
+        output, tuple
+    ), "please make sure flash-attn>=2.4.3 where cross_entropy_loss returns Tuple[losses, z_losses]."
     return -output[0]
 
 
@@ -298,9 +298,9 @@ def allgather_dict_tensors(tensors: dict[str, torch.Tensor] | TensorDict, size, 
 
 
 def split_dict_tensor_into_batches(tensors: TensorDict, batch_size) -> list[TensorDict]:
-    assert tensors.batch_size[0] % batch_size == 0, (
-        f"input data batch size: {tensors.batch_size[0]}, split batch size: {batch_size}"
-    )
+    assert (
+        tensors.batch_size[0] % batch_size == 0
+    ), f"input data batch size: {tensors.batch_size[0]}, split batch size: {batch_size}"
     return tensors.split(batch_size)
 
 

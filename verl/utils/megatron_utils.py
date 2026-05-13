@@ -58,9 +58,9 @@ def get_model(
         mpu.get_pipeline_model_parallel_world_size() > 1
         and mpu.get_virtual_pipeline_model_parallel_world_size() is not None
     ):
-        assert model_type != ModelType.encoder_and_decoder, (
-            "Interleaved schedule not supported for model with both encoder and decoder"
-        )
+        assert (
+            model_type != ModelType.encoder_and_decoder
+        ), "Interleaved schedule not supported for model with both encoder and decoder"
         model = []
         for i in range(mpu.get_virtual_pipeline_model_parallel_world_size()):
             mpu.set_virtual_pipeline_model_parallel_rank(i)
@@ -78,9 +78,9 @@ def get_model(
         add_decoder = True
         if model_type == ModelType.encoder_and_decoder:
             if mpu.get_pipeline_model_parallel_world_size() > 1:
-                assert mpu.get_pipeline_model_parallel_split_rank() is not None, (
-                    "Split rank needs to be specified for model with both encoder and decoder"
-                )
+                assert (
+                    mpu.get_pipeline_model_parallel_split_rank() is not None
+                ), "Split rank needs to be specified for model with both encoder and decoder"
                 rank = mpu.get_pipeline_model_parallel_rank()
                 split_rank = mpu.get_pipeline_model_parallel_split_rank()
                 world_size = mpu.get_pipeline_model_parallel_world_size()
@@ -695,9 +695,9 @@ def default_tp_concat_fn(
             num_key_value_heads = hf_config.vision_config.num_heads
         assert num_attention_heads % num_key_value_heads == 0
         num_q_per_kv = num_attention_heads // num_key_value_heads
-        assert infer_params[0].shape[0] % (num_q_per_kv + 2) == 0, (
-            f"param '{name}' shape '{infer_params[0].shape}' dim0 is not divisible by {num_q_per_kv + 2}"
-        )
+        assert (
+            infer_params[0].shape[0] % (num_q_per_kv + 2) == 0
+        ), f"param '{name}' shape '{infer_params[0].shape}' dim0 is not divisible by {num_q_per_kv + 2}"
         kv_size_per_tp = infer_params[0].shape[0] // (num_q_per_kv + 2)
         split_size = [kv_size_per_tp * num_q_per_kv, kv_size_per_tp, kv_size_per_tp]
         for infer_param in infer_params:

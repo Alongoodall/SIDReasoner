@@ -173,9 +173,9 @@ def load_state_dict_to_megatron_llama(
                 requires_grad=False,
             )
         else:
-            assert tensor.shape == chunk_shape, (
-                f"rank #{torch.distributed.get_rank()} tensor {name} shape {tensor.shape} != {chunk_shape}"
-            )
+            assert (
+                tensor.shape == chunk_shape
+            ), f"rank #{torch.distributed.get_rank()} tensor {name} shape {tensor.shape} != {chunk_shape}"
             sync_tensor = torch.empty_like(tensor, device=get_device_id(), requires_grad=False)
 
         for i in range(tp_size):
@@ -220,9 +220,9 @@ def load_state_dict_to_megatron_llama(
                 requires_grad=False,
             )
         else:
-            assert tensor.shape == chunk_shape, (
-                f"rank #{torch.distributed.get_rank()} tensor {name} shape {tensor.shape} != {chunk_shape}"
-            )
+            assert (
+                tensor.shape == chunk_shape
+            ), f"rank #{torch.distributed.get_rank()} tensor {name} shape {tensor.shape} != {chunk_shape}"
             sync_tensor = torch.empty_like(tensor, device=get_device_id(), requires_grad=False)
 
         for i in range(tp_size):
@@ -355,9 +355,9 @@ def load_state_dict_to_megatron_llama(
                 requires_grad=False,
             )
         else:
-            assert tensor.shape == chunk_shape, (
-                f"rank #{torch.distributed.get_rank()} tensor {q_name} shape {tensor.shape} != {chunk_shape}"
-            )
+            assert (
+                tensor.shape == chunk_shape
+            ), f"rank #{torch.distributed.get_rank()} tensor {q_name} shape {tensor.shape} != {chunk_shape}"
             sync_tensor = torch.empty_like(tensor, device=get_device_id(), requires_grad=False)
 
         for i in range(tp_size):
