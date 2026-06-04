@@ -9,6 +9,8 @@
 
 set -euo pipefail
 
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; then
     PROJECT_DIR="${SLURM_SUBMIT_DIR}"
 else
