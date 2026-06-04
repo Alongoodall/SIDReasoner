@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=gpu_h100
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=4
 #SBATCH --job-name=sid-stage2-activation
 #SBATCH --ntasks=1

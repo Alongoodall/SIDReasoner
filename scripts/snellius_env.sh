@@ -8,7 +8,12 @@ if [[ -n "${SLURM_JOB_ID:-}" ]] && command -v module >/dev/null 2>&1; then
     module purge
     module load 2023 || true
     module load CUDA/12.4.0 || true
+    
+    # Restore the path to your local user binaries (~/.local/bin) where 'uv' lives
+    export PATH="$HOME/.local/bin:$PATH"
 fi
+
+export HF_HOME="${HF_HOME:-${PWD}/.cache/huggingface}"
 
 export HF_HOME="${HF_HOME:-${PWD}/.cache/huggingface}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"

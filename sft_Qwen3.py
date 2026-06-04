@@ -199,12 +199,12 @@ def train(
     category: str = "Office_Products",
     # training hyperparams
     batch_size: int = 1024,
-    micro_batch_size: int = 1,
+    micro_batch_size: int = 16,
     num_epochs: int = 10,
     learning_rate: float = 3e-4,
     cutoff_len: int = 1024,
     # llm hyperparams
-    group_by_length: bool = False,  # faster, but produces an odd training loss curve
+    # group_by_length: bool = False,  # faster, but produces an odd training loss curve
     # wandb params
     wandb_project: str = "MiniOneRec",
     wandb_run_name: str = "Office_Products_stage1_sft_Qwen3-1.7B",
@@ -483,6 +483,8 @@ def train(
             per_device_train_batch_size=micro_batch_size,
             per_device_eval_batch_size=micro_batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
+            dataloader_num_workers=4,  
+            dataloader_pin_memory=True,
             warmup_steps=20,
             num_train_epochs=num_epochs,
             learning_rate=learning_rate,
@@ -501,7 +503,7 @@ def train(
             save_total_limit=10,
             load_best_model_at_end=True,
             ddp_find_unused_parameters=False if ddp else None,
-            group_by_length=group_by_length,
+            #group_by_length=group_by_length,
             report_to="wandb",
         ),
         data_collator=transformers.DataCollatorForSeq2Seq(
