@@ -1,0 +1,3 @@
+[submodule "MiniOneRec"]
+	path = MiniOneRec
+	url = https://github.com/AkaliKong/MiniOneRec.git
