@@ -41,7 +41,7 @@ CUDA_VISIBLE_DEVICES="${CUDA_DEVICES}" ${TORCHRUN_CMD} --nproc_per_node "${NPROC
     sft_Qwen3.py \
     --base_model "${BASE_MODEL}" \
     --batch_size 1024 \
-    --micro_batch_size 16 \
+    --micro_batch_size 4 \
     --train_file "${TRAIN_FILE}" \
     --eval_file "${EVAL_FILE}" \
     --output_dir "${OUTPUT_DIR}" \

@@ -87,7 +87,7 @@ def main(
         # Format for tokenization
         info_semantic = [f"""{prefix_prompt}{_}\n""" for _ in semantic_ids]
 
-    tokenizer = AutoTokenizer.from_pretrained(base_model)
+    tokenizer = AutoTokenizer.from_pretrained(base_model, use_fast=False)
     # Create prefixID for semantic IDs (existing functionality)
     if base_model.lower().find("llama") > -1:
         prefixID = [tokenizer(_).input_ids[1:] for _ in info_semantic]

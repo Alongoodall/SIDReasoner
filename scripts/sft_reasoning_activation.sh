@@ -54,4 +54,4 @@ CUDA_VISIBLE_DEVICES="${CUDA_DEVICES}" ${TORCHRUN_CMD} --nproc_per_node "${NPROC
     --reasoning_train_file "./data/Amazon/index/${CATEGORY}.integrated_narrative.csv" \
     --train_new_token_embeddings_only False \
     "$@"
-} > "${LOG_FILE}" 2>&1
+} 2>&1 | tee "${LOG_FILE}"

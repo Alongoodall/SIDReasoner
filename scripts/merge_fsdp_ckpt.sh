@@ -13,7 +13,7 @@
 # Example:
 # bash merge_verl_ckpt.sh ./RecRL_with_Reasoning/Qwen3-1.7B_Mix2-50K_Games/global_step_10/actor
 
-set -euo pipefail
+set -eo pipefail
 
 if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; then
     SCRIPT_DIR="${SLURM_SUBMIT_DIR}"
@@ -42,7 +42,7 @@ echo "Verl checkpoint directory: $CKPT_DIR"
 echo "Will save merged HF model to: $MERGED_DIR"
 echo ""
 
-
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 MERGE_PY="./scripts/merge_fsdp_checkpoint.py"
 
 if [ ! -f "$MERGE_PY" ]; then
@@ -55,7 +55,7 @@ echo "Using merge script: $MERGE_PY"
 echo ""
 
 # Run merge
-${PYTHON_CMD} "$MERGE_PY" \
+${PYTHON_CMD} -c "import sys, os; sys.path.insert(0, os.getcwd()); import runpy; runpy.run_path('$MERGE_PY', run_name='__main__')" \
     --checkpoint "$CKPT_DIR" \
     --output-dir "$MERGED_DIR"
 

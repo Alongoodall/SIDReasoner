@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_h100
 #SBATCH --gpus=4
 #SBATCH --job-name=sid-stage3-rl
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --time=48:00:00
+#SBATCH --time=72:00:00
 #SBATCH --output=slurm_output/%x-%j.out
 
 # Tested successfully on the hiyouga/verl:ngc-th2.6.0-cu126-vllm0.8.4-flashinfer0.2.2-cxx11abi0 image.
@@ -26,6 +26,9 @@ cd "$SCRIPT_DIR"
 
 source ./scripts/snellius_env.sh
 
+# had to unset this to prevent allocation errors on A100 GPUs
+unset ROCR_VISIBLE_DEVICES
+
 # ================================
 # Note: please change the number of GPUs and nodes according to your setup.
 # ================================
@@ -41,14 +44,14 @@ mkdir -p ./logs
 {
 ${PYTHON_CMD} -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=./data/Amazon/rec_reasoning_verl/Office_Products/train.parquet \
-    data.val_files=./data/Amazon/rec_reasoning_verl/Office_Products/test.parquet \
+    data.train_files=/gpfs/home1/scur1222/SIDReasoner/data/Amazon/rec_reasoning_verl/Office_Products/train.parquet \
+    data.val_files=/gpfs/home1/scur1222/SIDReasoner/data/Amazon/rec_reasoning_verl/Office_Products/test.parquet \
     data.train_batch_size=256 \
     data.max_prompt_length=1024 \
     data.max_response_length=1024 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path="${stage2_checkpoint}" \
+    actor_rollout_ref.model.path=/gpfs/home1/scur1222/SIDReasoner/output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
     actor_rollout_ref.actor.optim.lr=5e-7 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=256 \
@@ -67,10 +70,11 @@ ${PYTHON_CMD} -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.n=16 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=8 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
+    critic.model.path=/gpfs/home1/scur1222/SIDReasoner/output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    custom_reward_function.path="./verl/utils/reward_score/direct_recommendation_StepRule_Office.py" \
+    custom_reward_function.path="/gpfs/home1/scur1222/SIDReasoner/verl/utils/reward_score/direct_recommendation_StepRule_Office.py" \
     custom_reward_function.name="rule_base_reward" \
     trainer.project_name='RecRL_Reasoning' \
     trainer.experiment_name="${experiment_name}" \

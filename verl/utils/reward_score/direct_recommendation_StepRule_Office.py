@@ -124,7 +124,7 @@ def construct_prefix_allowed_hashmap(item_info_path):
 
 class MyRewardComputer:
     def __init__(self):
-        self.sid_hash = construct_prefix_allowed_hashmap("./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt")
+        self.sid_hash = construct_prefix_allowed_hashmap("/gpfs/home1/scur1222/SIDReasoner/data/Amazon/info/Office_Products_5_2016-10-2018-11.txt")
 
     def compute(
         self,

@@ -19,7 +19,8 @@ cd "$SCRIPT_DIR"
 source ./scripts/snellius_env.sh
 
 CATEGORY="${CATEGORY:-Office_Products}"
-EXP_NAME="${EXP_NAME:-./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint}"
+#EXP_NAME="${EXP_NAME:-./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint}"
+EXP_NAME="/gpfs/home1/scur1222/SIDReasoner/checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_1520/actor_merged"
 TEST_FILE="${TEST_FILE:-./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv}"
 INFO_FILE="${INFO_FILE:-./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt}"
 CUDA_LIST="${CUDA_LIST:-0 1}"
