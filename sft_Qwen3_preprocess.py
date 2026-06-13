@@ -23,6 +23,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import json
 import wandb
 from contextlib import contextmanager
+from datasets import DatasetDict
 
 """
 Unused imports:`
@@ -46,56 +47,14 @@ from datasets import Dataset as HFDataset
 from torch.utils.data import ConcatDataset
 
 
-class MultiEvalTrainer(transformers.Trainer):
-    """
-    Runs the default evaluation and then iterates through any extra eval sets so every epoch
-    produces loss numbers for the auxiliary datasets as well.
-    """
 
-    def __init__(self, *args, extra_eval_sets: Optional[Dict[str, HFDataset]] = None, **kwargs):
-        self.extra_eval_sets = extra_eval_sets or {}
-        super().__init__(*args, **kwargs)
+def set_seed(seed):
+    random.seed(seed)
+    torch.manual_seed(seed)
 
-    @contextmanager
-    def _disable_callback(self, callback_cls):
-        callbacks = self.callback_handler.callbacks
-        removed = [cb for cb in callbacks if isinstance(cb, callback_cls)]
-        if not removed:
-            yield
-            return
-        self.callback_handler.callbacks = [cb for cb in callbacks if not isinstance(cb, callback_cls)]
-        try:
-            yield
-        finally:
-            self.callback_handler.callbacks = callbacks
 
-    def evaluate(
-        self,
-        eval_dataset: Optional[HFDataset] = None,
-        ignore_keys: Optional[List[str]] = None,
-        metric_key_prefix: str = "eval",
-    ):
-        metrics = super().evaluate(
-            eval_dataset=eval_dataset,
-            ignore_keys=ignore_keys,
-            metric_key_prefix=metric_key_prefix,
-        )
-
-        if not self.extra_eval_sets:
-            return metrics
-
-        for name, dataset in self.extra_eval_sets.items():
-            if dataset is None:
-                continue
-            with self._disable_callback(EarlyStoppingCallback):
-                extra_metrics = super().evaluate(
-                    eval_dataset=dataset,
-                    ignore_keys=ignore_keys,
-                    metric_key_prefix=f"{metric_key_prefix}_{name}",
-                )
-            self.log(extra_metrics)
-            metrics.update(extra_metrics)
-        return metrics
+def build_hf_dataset(dataset):
+    return HFDataset.from_dict({k: [v[k] for v in dataset] for k in dataset[0].keys()})
 
 
 class TokenExtender:
@@ -124,17 +83,6 @@ class TokenExtender:
         self.new_tokens = sorted(list(self.new_tokens))
 
         return self.new_tokens
-
-
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
 def _decode_tokens(tokens, tokenizer_ref):
@@ -169,46 +117,18 @@ def _preview_dataset(dataset, name, tokenizer_ref, max_samples=3):
         print()
 
 
-def _get_cosine_schedule_with_warmup_lr_lambda(current_step, *, num_warmup_steps, num_training_steps, num_cycles):
-    if current_step < num_warmup_steps:
-        return max(0.1, float(current_step) / float(max(1, num_warmup_steps)))
-    progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
-    return max(0.1, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
 
-
-def get_cosine_schedule_with_warmup(
-    optimizer, num_warmup_steps, num_training_steps, num_cycles: float = 0.5, last_epoch: int = -1
-):
-    lr_lambda = partial(
-        _get_cosine_schedule_with_warmup_lr_lambda,
-        num_warmup_steps=num_warmup_steps,
-        num_training_steps=num_training_steps,
-        num_cycles=num_cycles,
-    )
-    return LambdaLR(optimizer, lr_lambda, last_epoch)
-
-
-def train(
+def preprocess(
     # model/data params
     base_model: str = "Qwen/Qwen3-1.7B",
     train_file: str = "./data/Amazon/train/Office_Products_5_2016-10-2018-11.csv",
     eval_file: str = "./data/Amazon/valid/Office_Products_5_2016-10-2018-11.csv",
-    output_dir: str = "./output_dir/Office_Products_stage1_sft_Qwen3-1.7B",
+    output_dir: str = "./data",
     sample: int = -1,
     seed: int = 42,
     category: str = "Office_Products",
-    # training hyperparams
-    batch_size: int = 1024,
-    micro_batch_size: int = 16,
-    num_epochs: int = 10,
-    learning_rate: float = 3e-4,
     cutoff_len: int = 1024,
-    # llm hyperparams
-    # group_by_length: bool = False,  # faster, but produces an odd training loss curve
-    # wandb params
     wandb_project: str = "MiniOneRec",
-    wandb_run_name: str = "Office_Products_stage1_sft_Qwen3-1.7B",
-    resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
     train_from_scratch: bool = False,
     sid_index_path: str = "./data/Amazon/index/Office_Products.index.json",
     item_meta_path: str = "./data/Amazon/index/Office_Products.item.json",
@@ -218,7 +138,9 @@ def train(
     mask_assistant: bool = True,  # Whether only the target response is used for loss calculation
     train_new_token_embeddings_only: bool = False,
 ):
+
     set_seed(seed)
+
     os.environ["WANDB_PROJECT"] = wandb_project
     category_dict = {
         "Industrial_and_Scientific": "industrial and scientific items",
@@ -235,7 +157,6 @@ def train(
         category = "items"
 
     assert base_model, "Please specify a --base_model, e.g. --base_model='decapoda-research/llama-7b-hf'"
-    gradient_accumulation_steps = batch_size // micro_batch_size
 
     device_map = "auto"
     world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -258,8 +179,6 @@ def train(
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "left"
-
-    print(f"Tokenizer length: {len(tokenizer)}")
 
     if sid_index_path and os.path.exists(sid_index_path):
         print(f"Loading index from {sid_index_path}")
@@ -298,14 +217,6 @@ def train(
             model.print_trainable_parameters()
     else:
         print("Full fine-tuning enabled: attention blocks, FFNs, and embeddings remain trainable.")
-
-    if num_new_tokens == 0 and train_new_token_embeddings_only:
-        print("No new tokens added; the entire model will remain trainable.")
-
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    percent = (trainable_params / total_params) * 100 if total_params > 0 else 0.0
-    print(f"Trainable parameters: {trainable_params} / {total_params} ({percent:.4f}%)")
 
     train_datasets = []
     # train_data1 = SFTData(train_file=train_file, tokenizer=tokenizer, max_len=cutoff_len,  sample=sample, seed=seed, category=category)
@@ -435,13 +346,6 @@ def train(
     )
     print("LOAD DATA FINISHED")
 
-    if resume_from_checkpoint:
-        checkpoint_name = os.path.join(resume_from_checkpoint, "pytorch_model.bin")  # Full checkpoint
-
-    if not ddp and torch.cuda.device_count() > 1:
-        model.is_parallelizable = True
-        model.model_parallel = True
-
     sample_frac = 1
     hf_train_dataset = HFDataset.from_dict({k: [v[k] for v in train_data] for k in train_data[0].keys()})
     hf_train_dataset = hf_train_dataset.shuffle(seed=42).select(range(int(sample_frac * len(hf_train_dataset))))
@@ -459,74 +363,16 @@ def train(
     ).shuffle(seed=seed)
     hf_eval_dataset_sid2title_translation = hf_eval_dataset_sid2title_translation.shuffle(seed=42)
 
-    extra_eval_sets = {
-        "title2sid": hf_eval_dataset_title2sid_translation,
-        "sid2title": hf_eval_dataset_sid2title_translation,
-    }
+    dataset_dict = DatasetDict({
+    "train": hf_train_dataset,
+    "val": hf_val_dataset,
+    "eval_title2sid": hf_eval_dataset_title2sid_translation,
+    "eval_sid2title": hf_eval_dataset_sid2title_translation,
+    })
 
-    print(hf_train_dataset)
-    print(hf_val_dataset)
-    print(hf_eval_dataset_title2sid_translation)
-    print(hf_eval_dataset_sid2title_translation)
-
-    # eval_step = 0.05
-    trainer = MultiEvalTrainer(
-        # deepspeed=deepspeed,
-        model=model,
-        # train_dataset=hf_train_dataset.select(range(128)),
-        train_dataset=hf_train_dataset,
-        eval_dataset=hf_val_dataset,
-        extra_eval_sets=extra_eval_sets,
-        args=transformers.TrainingArguments(
-            # deepspeed=deepspeed,
-            run_name=wandb_run_name,
-            per_device_train_batch_size=micro_batch_size,
-            per_device_eval_batch_size=micro_batch_size,
-            gradient_accumulation_steps=gradient_accumulation_steps,
-            dataloader_num_workers=4,
-            dataloader_pin_memory=True,
-            warmup_steps=20,
-            num_train_epochs=num_epochs,
-            learning_rate=learning_rate,
-            bf16=True,
-            logging_steps=1,
-            optim="adamw_torch",
-            # eval_strategy="steps",
-            # eval_steps=2,
-            # save_strategy="steps",
-            # save_steps=2,
-            eval_strategy="epoch",
-            save_strategy="epoch",
-            metric_for_best_model="eval_loss",
-            greater_is_better=False,
-            output_dir=output_dir,
-            save_total_limit=10,
-            load_best_model_at_end=True,
-            ddp_find_unused_parameters=False if ddp else None,
-            #group_by_length=group_by_length,
-            report_to="wandb",
-        ),
-        data_collator=transformers.DataCollatorForSeq2Seq(
-            tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-        ),
-        callbacks=[
-            EarlyStoppingCallback(early_stopping_patience=3),
-        ],
-        # optimizers=(optimizer, lr_scheduler)
-    )
-    model.config.use_cache = False
-
-    # evaluate first before training
-    # trainer.evaluate()
-
-    trainer.train(resume_from_checkpoint=resume_from_checkpoint)
-    # trainer.save_model(output_dir)
-
-    model.state_dict()
-    output_dir = os.path.join(output_dir, "final_checkpoint")
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
+    dataset_dict.save_to_disk(os.path.join(output_dir, "preprocessed"))
 
 
 if __name__ == "__main__":
-    fire.Fire(train)
+    import fire
+    fire.Fire(preprocess)

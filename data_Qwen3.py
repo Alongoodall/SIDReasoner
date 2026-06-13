@@ -65,9 +65,20 @@ def mask_assistant_response_only(
         tokenize=False,
     )
 
+    # print(f"All raw text repr: {repr(raw_text)}")
+    # print(f"ALL assistant response repr: {repr(assistant_response)}")
+
     # --- 2. locate assistant_response start ---
     pos = raw_text.rfind(assistant_response)
     if pos == -1:
+        print(f"raw text: {raw_text}")
+        print(f"assistant response: {assistant_response}")
+
+        print(f"raw text repr: {repr(raw_text)}")
+        print(f"assistant response repr: {repr(assistant_response)}")
+
+        print(f"rfind output: {raw_text.rfind(assistant_response)}")
+        print(f"len(raw_text): {len(raw_text)}, len(assistant_response {len(assistant_response)}")
         raise ValueError("assistant response not found in raw_text")
 
     # --- 3. tokenize prefix ---
@@ -172,7 +183,7 @@ class SFTData(Dataset):
             else:
                 history += ',\t"' + row["history_item_title"][i] + '"'
         target_item = str(row["item_title"])
-        target_item = '"' + target_item + '"\n'
+        # target_item = '"' + target_item + '"\n'
         target_item_id = row["item_id"]
         last_history_item_id = eval(row["history_item_id"])[-1]
         return {
