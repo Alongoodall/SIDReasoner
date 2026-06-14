@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
-#SBATCH --job-name=sasrec
+#SBATCH --job-name=gru
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
 #SBATCH --time=02:00:00
-#SBATCH --output=slurm_output/%x-%j.out
+#SBATCH --output=slurm_output/gru_office.out
 
 set -euo pipefail
 
 cd ~/SIDReasoner/MiniOneRec
 source ~/SIDReasoner/.venv/bin/activate
 
-python3 sasrec.py --model SASRec --data Office_Products
+python3 sasrec.py --model GRU --data Office_Products
