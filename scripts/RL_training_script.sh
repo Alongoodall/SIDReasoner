@@ -37,6 +37,11 @@ nnodes="${NNODES:-1}"
 experiment_name="${EXPERIMENT_NAME:-Office_Products_stage3_rl_Qwen3-1.7B}"
 stage2_checkpoint="${STAGE2_CHECKPOINT:-./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint}"
 log_file="${LOG_FILE:-./logs/${experiment_name}.log}"
+category="${CATEGORY:-Office_Products}"
+rl_data_dir="${RL_DATA_DIR:-${SCRIPT_DIR}/data/Amazon/rec_reasoning_verl/${category}}"
+rl_train_file="${RL_TRAIN_FILE:-${rl_data_dir}/train.parquet}"
+rl_val_file="${RL_VAL_FILE:-${rl_data_dir}/test.parquet}"
+export SID_INFO_PATH="${SID_INFO_PATH:-${SCRIPT_DIR}/data/Amazon/info/${category}_5_2016-10-2018-11.txt}"
 # ================================
 
 mkdir -p ./logs
@@ -44,14 +49,14 @@ mkdir -p ./logs
 {
 ${PYTHON_CMD} -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=/gpfs/home1/scur1222/SIDReasoner/data/Amazon/rec_reasoning_verl/Office_Products/train.parquet \
-    data.val_files=/gpfs/home1/scur1222/SIDReasoner/data/Amazon/rec_reasoning_verl/Office_Products/test.parquet \
+    data.train_files="${rl_train_file}" \
+    data.val_files="${rl_val_file}" \
     data.train_batch_size=256 \
     data.max_prompt_length=1024 \
     data.max_response_length=1024 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=/gpfs/home1/scur1222/SIDReasoner/output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+    actor_rollout_ref.model.path="${stage2_checkpoint}" \
     actor_rollout_ref.actor.optim.lr=5e-7 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=256 \
@@ -70,11 +75,11 @@ ${PYTHON_CMD} -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.n=16 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=8 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    critic.model.path=/gpfs/home1/scur1222/SIDReasoner/output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+    critic.model.path="${stage2_checkpoint}" \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    custom_reward_function.path="/gpfs/home1/scur1222/SIDReasoner/verl/utils/reward_score/direct_recommendation_StepRule_Office.py" \
+    custom_reward_function.path="./verl/utils/reward_score/direct_recommendation_StepRule_Office.py" \
     custom_reward_function.name="rule_base_reward" \
     trainer.project_name='RecRL_Reasoning' \
     trainer.experiment_name="${experiment_name}" \
