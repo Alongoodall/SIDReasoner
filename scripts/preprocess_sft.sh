@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --partition=gpu_mig
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
-#SBATCH --job-name=sid-preprocess
+#SBATCH --job-name=sid-preprocess-stage1-sft
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=9
+#SBATCH --cpus-per-task=18
 #SBATCH --time=08:00:00
 #SBATCH --output=slurm_output/%x-%j.out
 
@@ -14,18 +14,15 @@ if [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/pyproject.toml" ]]; 
 else
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
-
 cd "$SCRIPT_DIR"
 
 source ./scripts/snellius_env.sh
 
 CATEGORY="${CATEGORY:-Office_Products}"
-BASE_MODEL="${BASE_MODEL:-Qwen/Qwen3.5-0.8B}"
-
+BASE_MODEL="${BASE_MODEL:-google/gemma-3-1b-it}"
 TRAIN_FILE="${TRAIN_FILE:-./data/Amazon/train/Office_Products_5_2016-10-2018-11.csv}"
 EVAL_FILE="${EVAL_FILE:-./data/Amazon/valid/Office_Products_5_2016-10-2018-11.csv}"
-
-OUTPUT_DIR="${OUTPUT_DIR:-./data}"
+OUTPUT_DIR="${OUTPUT_DIR:-./data/Amazon/preprocessed}"
 
 SID_INDEX_PATH="${SID_INDEX_PATH:-./data/Amazon/index/Office_Products.index.json}"
 ITEM_META_PATH="${ITEM_META_PATH:-./data/Amazon/index/Office_Products.item.json}"
@@ -46,7 +43,7 @@ echo "Train: ${TRAIN_FILE}"
 echo "Eval:  ${EVAL_FILE}"
 echo "Output: ${OUTPUT_DIR}"
 
-python sft_Qwen3_preprocess.py \
+${PYTHON_CMD} sft_Qwen3_preprocess.py \
     --base_model "${BASE_MODEL}" \
     --train_file "${TRAIN_FILE}" \
     --eval_file "${EVAL_FILE}" \

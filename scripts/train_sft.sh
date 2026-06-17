@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=gpu_h100
 #SBATCH --gpus=4
-#SBATCH --job-name=sid-stage1-sft
+#SBATCH --job-name=sid-train-stage1-sft
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --time=24:00:00
@@ -19,13 +19,14 @@ cd "$SCRIPT_DIR"
 source ./scripts/snellius_env.sh
 
 CATEGORY="${CATEGORY:-Office_Products}"
-BASE_MODEL="${BASE_MODEL:-Qwen/Qwen3.5-0.8B}"
+BASE_MODEL="${BASE_MODEL:-Qwen/Qwen3-0.6B}"
 TRAIN_FILE="${TRAIN_FILE:-./data/Amazon/train/Office_Products_5_2016-10-2018-11.csv}"
 EVAL_FILE="${EVAL_FILE:-./data/Amazon/valid/Office_Products_5_2016-10-2018-11.csv}"
 TEST_FILE="${TEST_FILE:-./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv}"
 INFO_FILE="${INFO_FILE:-./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt}"
-OUTPUT_DIR="${OUTPUT_DIR:-./output_dir/Office_Products_stage1_sft_Qwen3.5-0.8B}"
-RUN_NAME="${RUN_NAME:-Office_Products_stage1_sft_Qwen3.5-0.8B}"
+DATA_DIR="${DATA_DIR:-./data/Amazon/preprocessed}"
+OUTPUT_DIR="${OUTPUT_DIR:-./output_dir/Office_Products_stage1_sft_Qwen3-0.6B}"
+RUN_NAME="${RUN_NAME:-Office_Products_stage1_sft_Qwen3-0.6B}"
 LOG_FILE="${LOG_FILE:-./logs/${RUN_NAME}.txt}"
 CUDA_DEVICES="${CUDA_DEVICES:-0,1,2,3}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-4}"
@@ -38,7 +39,7 @@ echo "${TRAIN_FILE} ${EVAL_FILE} ${INFO_FILE} ${TEST_FILE}"
 
 CUDA_VISIBLE_DEVICES="${CUDA_DEVICES}" ${TORCHRUN_CMD} --nproc_per_node "${NPROC_PER_NODE}" \
     --master_port "${MASTER_PORT}" \
-    sft_Qwen3.py \
+    sft_Qwen3_train.py \
     --base_model "${BASE_MODEL}" \
     --batch_size 1024 \
     --micro_batch_size 4 \
@@ -55,6 +56,7 @@ CUDA_VISIBLE_DEVICES="${CUDA_DEVICES}" ${TORCHRUN_CMD} --nproc_per_node "${NPROC
     --llm_generated_data_path "./data/Amazon/index/${CATEGORY}.item_enhanced_v2.json" \
     --llm_generated_sequence_path "./data/Amazon/index/${CATEGORY}.integrated_narrative.csv" \
     --general_reasoning_path "./data/Amazon/general/sampled_data.arrow" \
+    --data_dir "${DATA_DIR}" \
     --mask_assistant True \
     "$@"
 } > "${LOG_FILE}" 2>&1
