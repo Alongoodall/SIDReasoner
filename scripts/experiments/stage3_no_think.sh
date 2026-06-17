@@ -19,7 +19,7 @@ cd "${REPO_DIR}"
 CATEGORY="${CATEGORY:-Office_Products}"
 SEED="${SEED:-42}"
 PROJECT_ROOT="${PROJECT_ROOT:-/projects/prjs2120/groups/group_17}"
-NO_THINK_BASE_STAGE="${NO_THINK_BASE_STAGE:-stage1}"
+NO_THINK_BASE_STAGE="${NO_THINK_BASE_STAGE:-stage2}"
 
 case "${NO_THINK_BASE_STAGE}" in
     stage1|1)
