@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/logo.svg" width=70%>
+  <img src="./assets/logo.svg" width=50%>
   <h3>Replicating and Extending SIDReasoner</h3>
   <img src="https://img.shields.io/badge/Python-3.10-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/License-Apache--2.0-green.svg" alt="License">
