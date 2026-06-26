@@ -49,21 +49,11 @@ The project relies on:
 
 ## Local execution policy (important)
 
-All scripts under `scripts/` should be runnable with:
+All scripts under `scripts/` are runnable with:
 
 ```bash
 bash scripts/<script_name>.sh
 ```
-
-If any script still has `#SBATCH` lines, remove them.
-
-Also prefer this script-root pattern in shell scripts:
-```bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$SCRIPT_DIR"
-source ./scripts/snellius_env.sh
-```
-
 ---
 
 ## Data layout (expected)
@@ -78,7 +68,7 @@ Typical paths used by scripts:
 
 ---
 
-## Reproduction pipeline (commands)
+## Reproduction pipeline
 
 ## Stage 1 — SFT preprocessing
 ```bash
@@ -182,7 +172,7 @@ bash scripts/evaluate_Qwen3_think_batch.sh \
    - sequence-centric only
    - both
 5. **Cross-model checks**
-   - Qwen3-1.7B / Qwen3-0.6B / Gemma observations
+   - Qwen3-1.7B / Qwen3-0.6B
 
 ---
 
