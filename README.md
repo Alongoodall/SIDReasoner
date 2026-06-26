@@ -1,6 +1,7 @@
 <div align="center">
-<p align="center"><img src="./assets/logo.svg" width="500em"></img></p>
-
+<div align="center">
+  <img src="./assets/logo.svg" width="500">
+</div>
 **Replicating and Extending SIDReasoner**
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
