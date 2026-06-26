@@ -22,21 +22,17 @@ else
 fi
 cd "$SCRIPT_DIR"
 
+export PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH:-}"
+
 source ./scripts/snellius_env.sh
 
 CKPT_DIR="${1:-${CKPT_DIR:-./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor}}"
-
-if [ -z "$CKPT_DIR" ]; then
-    echo "ERROR: Please provide a verl checkpoint directory."
-    echo "Usage: bash merge_verl_ckpt.sh /path/to/actor"
-    exit 1
-fi
 
 # Remove trailing slash if exists
 CKPT_DIR="${CKPT_DIR%/}"
 
 # Output directory
-MERGED_DIR="${CKPT_DIR}_merged"
+MERGED_DIR="${MERGED_DIR:-${CKPT_DIR}_merged}"
 
 echo "Verl checkpoint directory: $CKPT_DIR"
 echo "Will save merged HF model to: $MERGED_DIR"

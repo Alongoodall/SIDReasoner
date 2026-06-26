@@ -25,6 +25,8 @@ ITEM_FILE="${ITEM_FILE:-./data/Amazon/index/Office_Products.item.json}"
 INDEX_FILE="${INDEX_FILE:-./data/Amazon/index/Office_Products.index.json}"
 CUDA_LIST="${CUDA_LIST:-0 1}"
 CUDA_LIST_CSV="${CUDA_LIST_CSV:-0,1}"
+TEMP_ROOT="${TEMP_ROOT:-./temp}"
+RESULTS_ROOT="${RESULTS_ROOT:-./results}"
 
 STAGE2_MODEL="${STAGE2_MODEL:-./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint}"
 STAGE3_EXPERIMENT_ROOT="${STAGE3_EXPERIMENT_ROOT:-./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B}"
@@ -75,8 +77,9 @@ do
 
     echo "Processing category: ${CATEGORY} with model: ${exp_name_clean} (STANDARD MODE)"
 
-    temp_dir="./temp/${CATEGORY}-${exp_name_clean}"
+    temp_dir="${TEMP_ROOT}/${CATEGORY}-${exp_name_clean}"
     echo "Creating temp directory: ${temp_dir}"
+    rm -rf "${temp_dir:?}"
     mkdir -p "${temp_dir}"
 
     echo "Splitting test data..."
@@ -112,7 +115,7 @@ do
         continue
     fi
 
-    output_dir="./results/${exp_name_clean}"
+    output_dir="${RESULTS_ROOT}/${exp_name_clean}"
     echo "Creating output directory: ${output_dir}"
     mkdir -p "${output_dir}"
 

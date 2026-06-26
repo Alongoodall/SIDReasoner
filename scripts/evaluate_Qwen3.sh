@@ -19,12 +19,13 @@ cd "$SCRIPT_DIR"
 source ./scripts/snellius_env.sh
 
 CATEGORY="${CATEGORY:-Office_Products}"
-#EXP_NAME="${EXP_NAME:-./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint}"
-EXP_NAME="/gpfs/home1/scur1222/SIDReasoner/checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_1520/actor_merged"
+EXP_NAME="${EXP_NAME:-./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint}"
 TEST_FILE="${TEST_FILE:-./data/Amazon/test/Office_Products_5_2016-10-2018-11.csv}"
 INFO_FILE="${INFO_FILE:-./data/Amazon/info/Office_Products_5_2016-10-2018-11.txt}"
 CUDA_LIST="${CUDA_LIST:-0 1}"
 CUDA_LIST_CSV="${CUDA_LIST_CSV:-0,1}"
+TEMP_ROOT="${TEMP_ROOT:-./temp}"
+RESULTS_ROOT="${RESULTS_ROOT:-./results}"
 
 dir1=$(basename "$(dirname "$EXP_NAME")")
 dir2=$(basename "$EXP_NAME")
@@ -41,8 +42,9 @@ if [[ ! -f "${INFO_FILE}" ]]; then
     exit 1
 fi
 
-temp_dir="./temp/${CATEGORY}-${exp_name_clean}"
+temp_dir="${TEMP_ROOT}/${CATEGORY}-${exp_name_clean}"
 echo "Creating temp directory: ${temp_dir}"
+rm -rf "${temp_dir:?}"
 mkdir -p "${temp_dir}"
 
 echo "Splitting test data..."
@@ -76,7 +78,7 @@ if [[ ${result_files} -eq 0 ]]; then
     exit 1
 fi
 
-output_dir="./results/${exp_name_clean}"
+output_dir="${RESULTS_ROOT}/${exp_name_clean}"
 echo "Creating output directory: ${output_dir}"
 mkdir -p "${output_dir}"
 
