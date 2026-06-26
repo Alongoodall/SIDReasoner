@@ -54,6 +54,7 @@ All scripts under `scripts/` are runnable with:
 ```bash
 bash scripts/<script_name>.sh
 ```
+
 ---
 
 ## Data layout (expected)
@@ -70,14 +71,16 @@ Typical paths used by scripts:
 
 ## Reproduction pipeline
 
-## Stage 1 — SFT preprocessing
+Adjust the model and dataset parameters to fit the respective experiments.
+
+### Stage 1 — SFT preprocessing
 ```bash
 bash scripts/preprocess_sft.sh \
   CATEGORY=Office_Products \
   BASE_MODEL=Qwen/Qwen3-0.6B
 ```
 
-## Stage 1 — SFT training
+### Stage 1 — SFT training
 ```bash
 bash scripts/train_sft.sh \
   CATEGORY=Office_Products \
@@ -86,7 +89,7 @@ bash scripts/train_sft.sh \
   NPROC_PER_NODE=4
 ```
 
-## Stage 2 — Reasoning activation
+### Stage 2 — Reasoning activation
 ```bash
 bash scripts/sft_reasoning_activation.sh \
   CATEGORY=Office_Products \
@@ -95,7 +98,7 @@ bash scripts/sft_reasoning_activation.sh \
   NPROC_PER_NODE=4
 ```
 
-## Stage 3 — RL (reasoning)
+### Stage 3 — RL (reasoning)
 ```bash
 bash scripts/RL_training_script.sh \
   CATEGORY=Office_Products \
@@ -104,26 +107,26 @@ bash scripts/RL_training_script.sh \
   NNODES=1
 ```
 
-## Create direct/no-thinking RL data
+### Create direct/no-thinking RL data
 ```bash
 python scripts/create_direct_rl_data.py \
   --category Office_Products \
   --category_label "office products"
 ```
 
-## Create reasoning RL data
+### Create reasoning RL data
 ```bash
 python scripts/create_reasoning_rl_data.py \
   --category Office_Products
 ```
 
-## Merge FSDP checkpoint (single step)
+### Merge FSDP checkpoint (single step)
 ```bash
 bash scripts/merge_fsdp_ckpt.sh \
   CKPT_DIR=./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B/global_step_100/actor
 ```
 
-## Merge all periodic checkpoints
+### Merge all periodic checkpoints
 ```bash
 bash scripts/merge_fsdp_ckpt_ALL.sh \
   CKPT_ROOT=./checkpoints/RecRL_Reasoning/Office_Products_stage3_rl_Qwen3-1.7B \
@@ -134,7 +137,7 @@ bash scripts/merge_fsdp_ckpt_ALL.sh \
 
 ## Evaluation commands
 
-## Standard (no-think) eval
+### Standard (no-think) eval
 ```bash
 bash scripts/evaluate_Qwen3.sh \
   CATEGORY=Office_Products \
@@ -143,7 +146,7 @@ bash scripts/evaluate_Qwen3.sh \
   CUDA_LIST_CSV="0,1"
 ```
 
-## Think eval (batch/multi-model)
+### Think eval (batch/multi-model)
 ```bash
 bash scripts/evaluate_Qwen3_think_batch.sh \
   CATEGORIES=Office_Products \
@@ -154,25 +157,140 @@ bash scripts/evaluate_Qwen3_think_batch.sh \
 
 ---
 
-## Extensions included in this repo
+## Extensions
 
-1. **Stage-2 alignment ablations before RL** (S1/S2/S3)
-2. **Diversity + concentration diagnostics**
-   - Gini
-   - normalized entropy
-   - coverage
-   - Lorenz-curve-style interpretation
-3. **Direct no-thinking GRPO**
-   - no `</think>` dependency in reward parsing
-   - initialized from:
-     - SFT checkpoint
-     - reasoning-activation checkpoint
-4. **Enriched-corpus decomposition**
-   - item-centric only
-   - sequence-centric only
-   - both
-5. **Cross-model checks**
-   - Qwen3-1.7B / Qwen3-0.6B
+### 1. Stage-2 alignment ablations (S1/S2/S3)
+
+**S1** — RL from Stage 1 SFT checkpoint directly:
+```bash
+bash scripts/RL_training_script.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+**S2** — RL from Stage 2 reasoning-activation checkpoint:
+```bash
+bash scripts/RL_training_script.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+**S3** — further reasoning-activation pass, then RL on that output:
+```bash
+bash scripts/sft_reasoning_activation.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+  CUDA_DEVICES=0,1,2,3 \
+  NPROC_PER_NODE=4
+
+bash scripts/RL_training_script.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage3_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+---
+
+### 2. Diversity + concentration diagnostics
+
+Computes Gini, normalized entropy, coverage, and Lorenz-curve-style interpretation over a results file:
+
+```bash
+python scripts/diversity_diagnostics.py \
+  --category Office_Products \
+  --results_path ./results/Office_Products_<exp_name>.json
+```
+
+---
+
+### 3. Direct no-thinking GRPO
+
+No `</think>` dependency in reward parsing. First create the direct RL data (see [Create direct/no-thinking RL data](#create-directno-thinking-rl-data) above), then train from either initialization:
+
+**Initialized from SFT checkpoint:**
+```bash
+bash scripts/RL_training_script_direct.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage1_sft_Qwen3-1.7B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+**Initialized from reasoning-activation checkpoint:**
+```bash
+bash scripts/RL_training_script_direct.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-1.7B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+---
+
+### 4. Enriched-corpus decomposition
+
+Preprocess with each corpus variant, then run the standard SFT → Stage 2 → RL pipeline on the resulting data.
+
+**Item-centric only:**
+```bash
+bash scripts/preprocess_sft.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=Qwen/Qwen3-0.6B \
+  CORPUS_MODE=item_only
+```
+
+**Sequence-centric only:**
+```bash
+bash scripts/preprocess_sft.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=Qwen/Qwen3-0.6B \
+  CORPUS_MODE=sequence_only
+```
+
+**Both (full enriched corpus, default):**
+```bash
+bash scripts/preprocess_sft.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=Qwen/Qwen3-0.6B \
+  CORPUS_MODE=both
+```
+
+---
+
+### 5. Cross-model checks (Qwen3-0.6B vs Qwen3-1.7B)
+
+Repeat the full pipeline substituting the target model size. Example for **Qwen3-0.6B**:
+
+```bash
+bash scripts/preprocess_sft.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=Qwen/Qwen3-0.6B
+
+bash scripts/train_sft.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=Qwen/Qwen3-0.6B \
+  CUDA_DEVICES=0,1,2,3 \
+  NPROC_PER_NODE=4
+
+bash scripts/sft_reasoning_activation.sh \
+  CATEGORY=Office_Products \
+  BASE_MODEL=./output_dir/Office_Products_stage1_sft_Qwen3-0.6B/final_checkpoint \
+  CUDA_DEVICES=0,1,2,3 \
+  NPROC_PER_NODE=4
+
+bash scripts/RL_training_script.sh \
+  CATEGORY=Office_Products \
+  STAGE2_CHECKPOINT=./output_dir/Office_Products_stage2_reasoning_activation_Qwen3-0.6B/final_checkpoint \
+  N_GPUS_PER_NODE=4 \
+  NNODES=1
+```
+
+For **Qwen3-1.7B**, substitute `Qwen/Qwen3-1.7B` and the corresponding `Qwen3-1.7B` checkpoint paths throughout.
 
 ---
 
