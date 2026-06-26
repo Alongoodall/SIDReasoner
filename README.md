@@ -2,7 +2,7 @@
 <div align="center">
   <img src="./assets/logo.svg" width="500">
 </div>
-**Replicating and Extending SIDReasoner**
+<h3>Replicating and Extending SIDReasoner</h3>
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)
