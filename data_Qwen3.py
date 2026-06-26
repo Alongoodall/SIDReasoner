@@ -453,6 +453,10 @@ Can you predict the next possible item that the user may expect?
         if self.test:
             prefix_prompt = "<think>\n</think>\n\n"
             prefix_prompt_ids = self.tokenizer.encode(prefix_prompt)
+
+            if type(tokenized) != list:
+                tokenized = tokenized["input_ids"]
+            
             tokenized = tokenized + prefix_prompt_ids
             attention_mask = attention_mask + [1] * len(prefix_prompt_ids)
 
@@ -1723,6 +1727,39 @@ class GeneralSFTReasonDataset(Dataset):
     def __len__(self):
         return len(self.inputs)
 
+    def _merge_messages(self, messages):
+        """Merge system content into first user message and merge consecutive messages with the same role."""
+        system_content = []
+        normalized = []
+
+        for m in messages:
+            role = m["role"]
+            content = m["content"]
+
+            if isinstance(content, list):
+                content = content[0]["text"]
+
+            if role == "system":
+                system_content.append(content)
+
+            elif role == "user":
+                if system_content:
+                    content = "\n".join(system_content) + "\n\n" + content
+                    system_content = []
+
+                if normalized and normalized[-1]["role"] == "user":
+                    normalized[-1]["content"] += "\n\n" + content
+                else:
+                    normalized.append({"role": "user", "content": content})
+
+            elif role == "assistant":
+                if normalized and normalized[-1]["role"] == "assistant":
+                    normalized[-1]["content"] += "\n\n" + content
+                else:
+                    normalized.append({"role": "assistant", "content": content})
+
+        return normalized
+
     def pre(self, idx):
         prompt_messages = []
         for message in self.data[idx]:
@@ -1742,10 +1779,22 @@ class GeneralSFTReasonDataset(Dataset):
             processed_template = self.tokenizer.apply_chat_template(
                 prompt_messages, tokenize=False, add_generation_prompt=True
             )
-        except Exception as e:
-            print(f"Error processing messages: {self.data[idx]}")
-            print(f"Error processing idx {idx}: {e}")
-            raise e
+        except Exception as e1:
+
+            if "Conversation roles must alternate user/assistant/user/assistant/..." in str(e1):
+                prompt_messages = self._merge_messages(prompt_messages)
+                try:
+                    processed_template = self.tokenizer.apply_chat_template(
+                        prompt_messages, tokenize=False, add_generation_prompt=True
+                    )
+                except Exception as e2:
+                    print(f"Error processing messages: {self.data[idx]}")
+                    print(f"Error processing idx {idx}: {e2}")
+                    raise
+            else:
+                print(f"Error processing messages: {self.data[idx]}")
+                print(f"Error processing idx {idx}: {e1}")
+                raise
         try:
             input_ids = self.tokenizer.encode(processed_template)
         except Exception as e:

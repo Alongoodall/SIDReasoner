@@ -370,7 +370,10 @@ def preprocess(
     "eval_sid2title": hf_eval_dataset_sid2title_translation,
     })
 
-    dataset_dict.save_to_disk(os.path.join(output_dir, "preprocessed"))
+    dataset_dict.save_to_disk(os.path.join(
+            output_dir,
+            f"{category.replace(' ', '_')}_{base_model.replace('/', '_')}_dataset"
+        ))
 
 
 if __name__ == "__main__":

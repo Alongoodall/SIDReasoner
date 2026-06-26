@@ -32,7 +32,7 @@ GENERAL_REASONING_PATH="${GENERAL_REASONING_PATH:-./data/Amazon/general/sampled_
 
 WANDB_PROJECT="${WANDB_PROJECT:-MiniOneRec}"
 
-RUN_NAME="${RUN_NAME:-preprocess_${CATEGORY}}"
+RUN_NAME="${RUN_NAME:-preprocess_${CATEGORY}_${BASE_MODEL##*/}}"
 LOG_FILE="${LOG_FILE:-./logs/${RUN_NAME}.txt}"
 
 mkdir -p ./logs ./data/Amazon/preprocessed
