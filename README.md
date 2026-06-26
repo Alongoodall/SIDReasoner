@@ -1,6 +1,6 @@
 # SIDReasoner Reproduction + Extensions (Local-Executable)
 
-This repository reproduces and extends SIDReasoner on Amazon Office Products, with a focus on **local reproducibility** (no SLURM required).
+This repository reproduces and extends SIDReasoner on Amazon Office Products.
 
 ## Hugging Face 🤗
 
