@@ -260,7 +260,9 @@ def main(
     outputs = []
     # cots = []
 
-    prompts = tokenizer.batch_decode([_["input_ids"] for _ in encodings], skip_special_tokens=False)
+    input_ids_list = [_["input_ids"] if isinstance(_["input_ids"], list) else _["input_ids"]["input_ids"] for _ in encodings]
+    prompts = tokenizer.batch_decode(input_ids_list, skip_special_tokens=False)
+
     with torch.no_grad():
         outputs = llm.generate(
             prompts,

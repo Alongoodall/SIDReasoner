@@ -448,6 +448,9 @@ Can you predict the next possible item that the user may expect?
             tokenize=True,
             return_tensors=None,
         )
+        if hasattr(tokenized, 'input_ids'):
+            tokenized = tokenized.input_ids
+            
         attention_mask = [1] * len(tokenized)
 
         if self.test:

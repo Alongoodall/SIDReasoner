@@ -189,6 +189,14 @@ def get_cosine_schedule_with_warmup(
 
 
 def train(
+    
+    # ablation study requirements
+    include_enriched_alignment: bool = True,
+    include_general_reasoning: bool = True,
+    include_item_enrichment: bool = True,      # gates train_data7 (item-centric)
+    include_sequence_enrichment: bool = True,  # gates train_data8 (user/sequence-centric)
+    max_steps: int = -1,
+
     # model/data params
     base_model: str = "Qwen/Qwen3-1.7B",
     train_file: str = "./data/Amazon/train/Office_Products_5_2016-10-2018-11.csv",
@@ -365,17 +373,17 @@ def train(
     )
     train_datasets.append(train_data5)
 
-    if llm_generated_data_path is not None:
+    if include_enriched_alignment and include_item_enrichment and llm_generated_data_path is not None:
         train_data7 = SidTextInterleaveDataset_v2(
             json_file=llm_generated_data_path, tokenizer=tokenizer, max_len=cutoff_len, sample=sample, seed=seed
         )
         train_datasets.append(train_data7)
-    if llm_generated_sequence_path is not None:
+    if include_enriched_alignment and include_sequence_enrichment and llm_generated_sequence_path is not None:
         train_data8 = SidTextInterleaveSequenceDataset(
             csv_file=llm_generated_sequence_path, tokenizer=tokenizer, max_len=cutoff_len, sample=sample, seed=seed
         )
         train_datasets.append(train_data8)
-    if general_reasoning_path is not None:
+    if include_general_reasoning and general_reasoning_path is not None:
         train_data9 = GeneralSFTReasonDataset(
             train_file=general_reasoning_path, tokenizer=tokenizer, max_len=3072, sample=60000, seed=seed
         )
@@ -487,6 +495,7 @@ def train(
             dataloader_pin_memory=True,
             warmup_steps=20,
             num_train_epochs=num_epochs,
+            max_steps=max_steps,
             learning_rate=learning_rate,
             bf16=True,
             logging_steps=1,
