@@ -1,7 +1,7 @@
 <div align="center">
 <p align="center"><img src="./assets/logo.svg" width="500em"></img></p>
 
-**Replicating and Extending SIDReasoner on Amazon Office Products**
+**Replicating and Extending SIDReasoner
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)
