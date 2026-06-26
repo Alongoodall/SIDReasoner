@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./assets/logo.png" width="500em"></img>
+<img src="./assets/logo.svg" width="500em"></img>
 
 **Replicating and Extending SIDReasoner on Amazon Office Products**
 
