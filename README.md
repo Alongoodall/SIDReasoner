@@ -2,7 +2,7 @@
 
 This repository reproduces and extends SIDReasoner on Amazon Office Products, with a focus on **local reproducibility** (no SLURM required).
 
-## Hugging Face Artifacts
+## Hugging Face 🤗
 
 Extended checkpoints/artifacts are available at:  
 **https://huggingface.co/Dam2/SIDReasoner_Ext/tree/main**
