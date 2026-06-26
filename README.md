@@ -1,13 +1,19 @@
-# SIDReasoner Reproduction + Extensions (Local-Executable)
+<div align="center">
+<img src="./assets/logo.png" width="500em"></img>
 
-This repository reproduces and extends SIDReasoner on Amazon Office Products.
+**Replicating and Extending SIDReasoner on Amazon Office Products**
 
-## Hugging Face 🤗
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)
+<a href="https://huggingface.co/Dam2/SIDReasoner_Ext/tree/main"><img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Checkpoints-yellow"></a>
 
-Extended checkpoints/artifacts are available at:  
-**https://huggingface.co/Dam2/SIDReasoner_Ext/tree/main**
+<a href="https://huggingface.co/Dam2/SIDReasoner_Ext/tree/main">🤗 Checkpoints & Artifacts</a> | <a href="https://github.com/Alongoodall/SIDReasoner">💻 Repository</a>
+</div>
 
 ---
+
+**SIDReasoner Reproduction + Extensions** reproduces and extends the [SIDReasoner](https://github.com/HappyPointer/SIDReasoner) framework on Amazon Office Products, providing a fully local-executable pipeline spanning **SFT alignment**, **reasoning activation**, and recommendation-oriented **reinforcement learning (RL)**, along with ablations over alignment stages, corpus composition, diversity diagnostics, and cross-model comparisons.
+
 
 ## Environment Setup
 
